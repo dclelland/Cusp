@@ -27,35 +27,23 @@ extension Matrix where Scalar == Double {
             return ifft1D(setup: setup)
         }
         
-        // General case: noninteger order.
-        let theta = a * .pi / 2
-        let cot = 1 / Scalar.tan(theta)
-        let csc = 1 / Scalar.sin(theta)
+        let theta = a * .pi / 2.0
+        let cot = 1.0 / Scalar.tan(theta)
+        let csc = 1.0 / Scalar.sin(theta)
+        let sgn = Scalar.sin(theta)
         
-        // Create index vector n = [0, 1, ..., N-1]
-//        let n = (0..<shape.count).map { Scalar($0) - Scalar(shape.count - 1) / 2.0 }
-        let n: Matrix<Scalar> = .fftXRamp(shape: shape)//.fftShifted()
+        let n: Matrix<Scalar> = .fftXRamp(shape: shape)
         
-        // Build the kernel matrix.
-        // Each element is computed as:
-        //   exp(-iπ*(n_i^2 + n_j^2)*cot/N + i2π*n_i*n_j*csc/N)
-        // We assume that a 2D array supports pointwise arithmetic and that the `<*>` operator
-        // performs matrix multiplication with a vector.
         var kernel = ComplexMatrix<Scalar>(shape: .square(length: shape.count)) { i, j in
             let phase = -Scalar.pi * (n[i] * n[i] + n[j] * n[j]) * cot / Scalar(shape.count) + 2.0 * .pi * n[i] * n[j] * csc / Scalar(shape.count)
             return Complex<Scalar>(length: 1.0, phase: phase)
         }
         
-        // Compute the normalization constant:
-        //   A = exp(-i*(π/4)*sgn(sinθ) - iθ/2) / sqrt(N * |sinθ|)
-        let sgn: Scalar = Scalar.sin(theta)
-        let length: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
-        let phase: Scalar = -.pi / 4.0 * sgn - theta / 2.0
-        let A = Complex<Scalar>(length: length, phase: phase)
+        let normLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
+        let normPhase: Scalar = -.pi / 4.0 * sgn - theta / 2.0
+        let norm = Complex<Scalar>(length: normLength, phase: normPhase)
         
-        // Compute the transform by matrix–vector multiplication.
-        // Here we assume that the operator `<*>` multiplies our 2D array (matrix) by the vector.
-        let transformed = A * (kernel <*> self.asColumn())
+        let transformed = norm * (kernel <*> self.asColumn())
         return transformed.asRow()
     }
     
