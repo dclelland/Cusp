@@ -32,7 +32,7 @@ extension Matrix where Scalar == Double {
         let sinAlpha = Scalar.sin(alpha)
           
         // Create an index vector centered around zero.
-        let n: Matrix<Scalar> = .fftXRamp(shape: shape).fftShifted()
+        let n: Matrix<Scalar> = .fftXRamp(shape: shape)//.fftShifted()
 
         // Pre-chirp multiplication: multiply input by a quadratic phase factor.
         let preChirpPhase = Scalar.pi * cotAlpha * n.square() / Scalar(shape.count)
