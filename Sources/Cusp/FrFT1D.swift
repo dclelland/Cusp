@@ -34,7 +34,7 @@ extension Matrix where Scalar == Double {
         
         // Create index vector n = [0, 1, ..., N-1]
         let N = shape.count
-        let n = (0..<N).map { Double($0) }
+        let n = (0..<N).map { Double($0) - Double(N - 1) / 2.0 }
         
         // Build the kernel matrix.
         // Each element is computed as:
