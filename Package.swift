@@ -13,13 +13,13 @@ let package = Package(
         .library(name: "Cusp", targets: ["Cusp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/dclelland/Plinth", from: "2.7.1")
+        .package(url: "https://github.com/dclelland/Plinth", from: "2.9.0")
     ],
     targets: [
         .target(
             name: "Cusp",
             dependencies: [
-                .product(name: "Plinth", package: "plinth")
+                .product(name: "Plinth", package: "Plinth")
             ]
         )
     ]
