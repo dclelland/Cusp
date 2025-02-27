@@ -9,7 +9,8 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func lct1D(matrix: LCTMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func lct1D(matrix: ComplexMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        precondition(matrix.shape == .square(length: 2))
         fatalError()
     }
     
