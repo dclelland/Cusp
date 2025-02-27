@@ -5,16 +5,20 @@
 //  Created by June Russell on 28/02/2025.
 //
 
+import Foundation
+import Numerics
 import Plinth
 
-public struct LCTMatrix<Scalar> {
+public struct LCTMatrix<Scalar> where Scalar: Real {
     
-    public var a: Scalar
-    public var b: Scalar
-    public var c: Scalar
-    public var d: Scalar
+    public typealias Complex = Numerics.Complex<Scalar>
     
-    public init(a: Scalar, b: Scalar, c: Scalar, d: Scalar) {
+    public var a: Complex
+    public var b: Complex
+    public var c: Complex
+    public var d: Complex
+    
+    public init(a: Complex, b: Complex, c: Complex, d: Complex) {
         self.a = a
         self.b = b
         self.c = c
@@ -25,7 +29,31 @@ public struct LCTMatrix<Scalar> {
 
 extension LCTMatrix where Scalar == Double {
     
-    public func determinant() -> Matrix {
+    public static func identityTransform() -> LCTMatrix {
+        return LCTMatrix(a: .one, b: .zero,
+                         c: .zero, d: .one)
+    }
+    
+    public static func fourierTransform() -> LCTMatrix {
+        return LCTMatrix(a: .zero, b: .one,
+                         c: -.one, d: .zero)
+    }
+    
+    public static func inverseFourierTransform() -> LCTMatrix {
+        return LCTMatrix(a: .zero, b: -.one,
+                         c: .one, d: .zero)
+    }
+    
+    public static func fractionalFourierTransform(angle: Scalar) -> LCTMatrix {
+        return LCTMatrix(a: .init(cos(angle)), b: .init(sin(angle)),
+                         c: .init(-sin(angle)), d: .init(cos(angle)))
+    }
+    
+}
+
+extension LCTMatrix where Scalar == Double {
+    
+    public func determinant() -> Complex {
         return a * d - b * c
     }
     

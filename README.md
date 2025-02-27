@@ -41,6 +41,7 @@ import Cusp
 - [ ] Write 1D LCT implementation
 - [ ] Write 2D LCT implementation
 - [ ] Write LCT matrix generators
+    - Does this need arithmetic operations? Perhaps there is a generic 2x2 complex matrix type somewhere...
 
 # Documentation
 
