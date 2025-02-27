@@ -32,34 +32,28 @@ extension Matrix where Scalar == Double {
         let sinAlpha = Scalar.sin(alpha)
           
         // Create an index vector centered around zero.
-        let n = (0..<shape.count).map { Scalar($0) - Scalar(shape.count / 2) }
+        let n: Matrix<Scalar> = .fftXRamp(shape: shape).fftShifted()
 
         // Pre-chirp multiplication: multiply input by a quadratic phase factor.
-        let preChirp: [Complex<Scalar>] = n.map { nVal in
-            let phase = Scalar.pi * cotAlpha * (nVal * nVal) / Scalar(shape.count)
-            return Complex<Scalar>(Scalar.cos(phase), Scalar.sin(phase))
-        }
-        let xPre = ComplexMatrix<Scalar>(shape: shape, elements: zip(self.elements, preChirp).map { Complex($0) * $1 })
+        let preChirpPhase = Scalar.pi * cotAlpha * n.square() / Scalar(shape.count)
+        let preChirp = ComplexMatrix<Scalar>(real: preChirpPhase.cos(), imaginary: preChirpPhase.sin())
+        let xPre = self * preChirp
         
         // Compute FFT of the pre-chirped signal.
-        let X = xPre.fft1D(setup: setup)
+        let X = xPre.fft1D(setup: setup)//.fftShifted()
         
         // Multiply in the Fourier domain by the chirp kernel.
-        let kernel: [Complex<Scalar>] = n.map { nVal in
-            let phase = Scalar.pi * (nVal * nVal) / (Scalar(shape.count) * sinAlpha)
-            return Complex<Scalar>(Scalar.cos(phase), Scalar.sin(phase))
-        }
-        let XKernel = ComplexMatrix<Scalar>(shape: shape, elements: zip(X, kernel).map { $0 * $1 })
+        let kernelPhase = Scalar.pi * n.square() / (Scalar(shape.count) * sinAlpha)
+        let kernel = ComplexMatrix<Scalar>(real: kernelPhase.cos(), imaginary: kernelPhase.sin())
+        let XKernel = X * kernel
         
         // Inverse FFT to complete the convolution.
-        let xIfft = XKernel.ifft1D(setup: setup)
+        let xIfft = XKernel.ifft1D(setup: setup)//.fftShifted()
         
         // Post-chirp multiplication.
-        let postChirp: [Complex<Scalar>] = n.map { nVal in
-            let phase = Scalar.pi * cotAlpha * (nVal * nVal) / Scalar(shape.count)
-            return Complex<Scalar>(Scalar.cos(phase), Scalar.sin(phase))
-        }
-        let y = ComplexMatrix<Scalar>(shape: shape, elements: zip(xIfft, postChirp).map { $0 * $1 })
+        let postChirpPhase = Scalar.pi * cotAlpha * n.square() / Scalar(shape.count)
+        let postChirp = ComplexMatrix<Scalar>(real: postChirpPhase.cos(), imaginary: postChirpPhase.sin())
+        let y = xIfft * postChirp
         
         // Overall scaling factor.
         let phaseA = -(.pi / 4.0 - alpha / 2.0)
