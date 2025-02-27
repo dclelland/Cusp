@@ -28,22 +28,20 @@ extension Matrix where Scalar == Double {
         }
         
         let theta = a * .pi / 2.0
-        let cot = 1.0 / Scalar.tan(theta)
-        let csc = 1.0 / Scalar.sin(theta)
-        let sgn = Scalar.sin(theta)
         
-        let n: Matrix<Scalar> = .fftXRamp(shape: shape)
+        let xRamp: Matrix<Scalar> = .fftXRamp(shape: .square(length: shape.count))
+        let yRamp: Matrix<Scalar> = .fftYRamp(shape: .square(length: shape.count))
+        let quadraticPhase: Matrix<Scalar> = (-Scalar.pi * (xRamp.square() + yRamp.square())) / Scalar.tan(theta)
+        let crossCoupling: Matrix<Scalar> = (2.0 * .pi * xRamp * yRamp) / Scalar.sin(theta)
+        let phase: Matrix<Scalar> = (quadraticPhase + crossCoupling) / Scalar(shape.count)
+        let kernel: ComplexMatrix<Scalar> = .init(real: phase.cos(), imaginary: phase.sin())
         
-        var kernel = ComplexMatrix<Scalar>(shape: .square(length: shape.count)) { i, j in
-            let phase = -Scalar.pi * (n[i] * n[i] + n[j] * n[j]) * cot / Scalar(shape.count) + 2.0 * .pi * n[i] * n[j] * csc / Scalar(shape.count)
-            return Complex<Scalar>(length: 1.0, phase: phase)
-        }
-        
+        let sgn = Scalar.sin(theta) >= 0 ? 1.0 : -1.0
         let normLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
         let normPhase: Scalar = -.pi / 4.0 * sgn - theta / 2.0
         let norm = Complex<Scalar>(length: normLength, phase: normPhase)
         
-        let transformed = norm * (kernel <*> self.asColumn())
+        let transformed = (kernel <*> self.asColumn()) * norm
         return transformed.asRow()
     }
     
