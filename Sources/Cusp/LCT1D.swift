@@ -23,17 +23,14 @@ extension ComplexMatrix where Scalar == Double {
     public func lct1D(matrix: ComplexMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         precondition(matrix.shape == .square(length: 2))
         
-        // Extract matrix components
         let a = matrix[0, 0].real
         let b = matrix[0, 1].real
         let c = matrix[1, 0].real
         let d = matrix[1, 1].real
         
-        // Check if the matrix is symplectic (ad - bc = 1)
         let determinant = a * d - b * c
         precondition(abs(determinant - 1.0) < 1e-10, "LCT matrix must be symplectic (ad - bc = 1)")
         
-        // General case - chirp method
         let inputChirp = ComplexMatrix.lct1DInputChirp(shape: shape, a: a, b: b, c: c, d: d)
         let outputChirp = ComplexMatrix.lct1DOutputChirp(shape: shape, a: a, b: b, c: c, d: d)
         
@@ -41,8 +38,8 @@ extension ComplexMatrix where Scalar == Double {
         let transformed = multiplied.fft1D(setup: setup).fftShifted()
         let result = transformed * outputChirp
         
-        // Scale factor based on the b parameter
-        return result * (abs(b) != 1.0 ? Complex(1.0 / Scalar.sqrt(abs(b)), 0) : Complex(1, 0))
+        return result / Scalar.sqrt(Scalar(shape.count))
+//        return result * (abs(b) != 1.0 ? Complex(1.0 / Scalar.sqrt(abs(b)), 0) : Complex(1, 0))
     }
     
 }
