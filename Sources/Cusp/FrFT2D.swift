@@ -15,29 +15,15 @@ extension Matrix where Scalar == Double {
         return ComplexMatrix(real: self).frft2D(a: a, setup: setup)
     }
     
-    public func frft2D(a_x: Scalar, a_y: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).frft2D(a_x: a_x, a_y: a_y, setup: setup)
-    }
-    
 }
 
 extension ComplexMatrix where Scalar == Double {
     
-    // Isotropic 2D FrFT (same angle in both dimensions)
     public func frft2D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        return frft2D(a_x: a, a_y: a, setup: setup)
+        let rowsTransformed = applyFrFTToRows(a: a, setup: setup)
+        return rowsTransformed.applyFrFTToColumns(a: a, setup: setup)
     }
     
-    // Anisotropic 2D FrFT (different angles for each dimension)
-    public func frft2D(a_x: Scalar, a_y: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        // First apply FrFT to each row
-        let rowsTransformed = applyFrFTToRows(a: a_x, setup: setup)
-        
-        // Then apply FrFT to each column of the result
-        return rowsTransformed.applyFrFTToColumns(a: a_y, setup: setup)
-    }
-    
-    // Helper method to apply 1D FrFT to each row
     private func applyFrFTToRows(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         var result = ComplexMatrix<Scalar>.zeros(shape: shape)
         
@@ -50,7 +36,6 @@ extension ComplexMatrix where Scalar == Double {
         return result
     }
     
-    // Helper method to apply 1D FrFT to each column
     private func applyFrFTToColumns(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         var result = ComplexMatrix<Scalar>.zeros(shape: shape)
         
@@ -62,4 +47,5 @@ extension ComplexMatrix where Scalar == Double {
         
         return result
     }
+    
 }
