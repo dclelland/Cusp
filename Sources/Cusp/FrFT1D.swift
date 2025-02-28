@@ -41,7 +41,7 @@ extension ComplexMatrix where Scalar == Double {
         let alpha = a * .pi / 2.0
         let cotAlpha = 1.0 / Scalar.tan(alpha)
         
-        let xRamp = Matrix.frftXRamp(shape: .row(length: shape.count))
+        let xRamp = Matrix.centeredXRamp(shape: .row(length: shape.count))
         let chirp = xRamp.square() * (.pi * cotAlpha / Scalar(shape.count))
         
         return ComplexMatrix(real: chirp.cos(), imaginary: chirp.sin())
@@ -51,7 +51,7 @@ extension ComplexMatrix where Scalar == Double {
         let alpha = a * .pi / 2.0
         let cscAlpha = 1.0 / Scalar.sin(alpha)
         
-        let xRamp = Matrix.frftXRamp(shape: .row(length: shape.count))
+        let xRamp = Matrix.centeredXRamp(shape: .row(length: shape.count))
         let chirp = xRamp.square() * (.pi * cscAlpha / Scalar(shape.count))
         
         return ComplexMatrix(real: chirp.cos(), imaginary: chirp.sin())
