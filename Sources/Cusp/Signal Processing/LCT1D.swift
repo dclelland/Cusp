@@ -20,12 +20,12 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func lct1D(matrix: LCTMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        let inputChirp = ComplexMatrix.lctInputChirp(shape: .row(length: shape.length), matrix: matrix)
-        let outputChirp = ComplexMatrix.lctOutputChirp(shape: .row(length: shape.length), matrix: matrix)
+        let preChirp = ComplexMatrix.lctPreChirp(shape: .row(length: shape.length), matrix: matrix)
+        let postChirp = ComplexMatrix.lctPostChirp(shape: .row(length: shape.length), matrix: matrix)
         
-        let multiplied = self * inputChirp
+        let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup).fftShifted()
-        let result = transformed * outputChirp
+        let result = transformed * postChirp
         
         return result / Scalar.sqrt(Scalar(shape.count))
     }
