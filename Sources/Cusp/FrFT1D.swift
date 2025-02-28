@@ -43,13 +43,14 @@ extension ComplexMatrix where Scalar == Double {
         let normFactor = Scalar.sqrt(N * Scalar.sin(phi).magnitude)
         
         // Create chirp vectors
-        let n = Array(0..<shape.count).map { Scalar($0 - shape.count / 2) }
-        let chirp1 = n.map { Complex(Scalar.cos(.pi * cotPhi * $0 * $0 / N), Scalar.sin(.pi * cotPhi * $0 * $0 / N)) }
-        let chirp2 = n.map { Complex(Scalar.cos(.pi * cscPhi * $0 * $0 / N), Scalar.sin(.pi * cscPhi * $0 * $0 / N)) }
+        let n = Matrix.frftXRamp(shape: .row(length: shape.count))
+        
+        let chirp1 = .pi * cotPhi * n.square() / N
+        let chirp2 = .pi * cscPhi * n.square() / N
         
         // Create ComplexMatrix objects from the chirp vectors
-        let chirpMatrix1 = ComplexMatrix(shape: .row(length: shape.count), elements: chirp1)
-        let chirpMatrix2 = ComplexMatrix(shape: .row(length: shape.count), elements: chirp2)
+        let chirpMatrix1 = ComplexMatrix(real: chirp1.cos(), imaginary: chirp1.sin())
+        let chirpMatrix2 = ComplexMatrix(real: chirp2.cos(), imaginary: chirp2.sin())
         
         // Step 1: Multiply input by first chirp
         let multiplied = self * chirpMatrix1
