@@ -11,15 +11,19 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func frft1D(a: Scalar) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).frft1D(a: a)
+    public func frft1DMatrix(a: Scalar) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).frft1DMatrix(a: a)
+    }
+    
+    public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).frft1D(a: a, setup: setup)
     }
     
 }
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func frft1D(a: Scalar) -> ComplexMatrix {
+    public func frft1DMatrix(a: Scalar) -> ComplexMatrix {
         guard a != 0 else {
             return self
         }
@@ -29,23 +33,102 @@ extension ComplexMatrix where Scalar == Double {
         return transformed.asRow() / Scalar.sqrt(Scalar(shape.count))
     }
     
+    public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        // Prepare parameters for the chirp method
+        let phi = a * .pi / 2
+        let cotPhi = 1 / Scalar.tan(phi)
+        let cscPhi = 1 / Scalar.sin(phi)
+        
+        let N = Scalar(shape.count)
+        let normFactor = Scalar.sqrt(N * Scalar.sin(phi).magnitude)
+        
+        // Create chirp vectors
+        let n = Array(0..<shape.count).map { Scalar($0 - shape.count / 2) }
+        let chirp1 = n.map { Complex(Scalar.cos(.pi * cotPhi * $0 * $0 / N), Scalar.sin(.pi * cotPhi * $0 * $0 / N)) }
+        let chirp2 = n.map { Complex(Scalar.cos(.pi * cscPhi * $0 * $0 / N), Scalar.sin(.pi * cscPhi * $0 * $0 / N)) }
+        
+        // Create ComplexMatrix objects from the chirp vectors
+        let chirpMatrix1 = ComplexMatrix(shape: .row(length: shape.count), elements: chirp1)
+        let chirpMatrix2 = ComplexMatrix(shape: .row(length: shape.count), elements: chirp2)
+        
+        // Step 1: Multiply input by first chirp
+        let multiplied = self * chirpMatrix1
+        
+        // Step 2: Compute FFT
+        let transformed = multiplied.fft1D(setup: setup)
+        
+        // Step 3: Multiply by second chirp
+        let result = transformed * (chirpMatrix2)
+        
+        // Apply normalization
+        return result / Scalar.sqrt(Scalar(shape.count))
+    }
+    
+//    public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+//        let N = Scalar(shape.count)
+//        let alpha = a * .pi / 2.0
+//        
+//        // Create a centered index ramp: n = -N/2, ..., N/2 - 1.
+//        let n: Matrix = .frftXRamp(shape: .row(length: shape.count)) // .fftShifted()
+//        
+//        // Step 1: Pre-Chirp Multiplication
+//        // Multiply by: exp(-i π n² (cot(alpha))/N)
+//        let cotAlpha: Scalar = 1.0 / Scalar.tan(alpha)
+//        let prePhase = (.pi / N) * (n.square() * cotAlpha)
+//        let preChirp = ComplexMatrix(real: prePhase.cos(), imaginary: -prePhase.sin())
+//        
+//        // Step 2: Convolution via FFT with the Chirp Kernel
+//        // Define the chirp kernel: h(n) = exp(i π n² (csc(alpha))/N)
+//        let cscAlpha: Scalar = 1.0 / Scalar.sin(alpha)
+//        let hPhase = (.pi / N) * (n.square() * cscAlpha)
+//        let h = ComplexMatrix(real: hPhase.cos(), imaginary: hPhase.sin())
+//        
+//        // Convolve y with h via FFT:
+//        // Note: These FFT routines should be unitary.
+//        let y = self * preChirp
+//        let Y = y.fft1D(setup: setup)
+//        let H = h.fft1D(setup: setup)
+//        let convFFT = Y * H
+//        let z = convFFT.ifft1D(setup: setup)
+//        
+//        // Step 3: Post-Chirp Multiplication
+//        // Multiply the result by the same chirp factor as in the pre-step.
+//        return z * preChirp / Scalar.sqrt(N)
+//    }
+    
 }
 
 extension ComplexMatrix where Scalar == Double {
     
     fileprivate static func frft1DKernel(shape: Shape, a: Scalar) -> ComplexMatrix {
         let alpha = a * .pi / 2.0
-        let cotAlpha: Scalar = 1.0 / Scalar.tan(alpha)
-        let cscAlpha: Scalar = 1.0 / Scalar.sin(alpha)
+        let cotAlpha = 1.0 / Scalar.tan(alpha)
+        let cscAlpha = 1.0 / Scalar.sin(alpha)
         
-        let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count)).fftShifted()
-        let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count)).fftShifted()
+        let xRamp: Matrix = .frftXRamp(shape: .square(length: shape.count))
+        let yRamp: Matrix = .frftYRamp(shape: .square(length: shape.count))
         
         let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotAlpha
         let cross = (2.0 * xRamp * yRamp) * cscAlpha
-        let phase = (Scalar.pi / Scalar(shape.count)) * (quadratic - cross)
+        let phase = (.pi / Scalar(shape.count)) * (quadratic - cross)
         
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    }
+    
+}
+
+extension Matrix where Scalar == Double {
+        
+    fileprivate static func frftXRamp(shape: Shape) -> Matrix {
+        let width = shape.columns / 2
+        let range = Scalar(-width)...Scalar(width - 1)
+        return Matrix.xRamp(shape: shape, range: range)
+    }
+    
+    fileprivate static func frftYRamp(shape: Shape) -> Matrix {
+        let height = shape.rows / 2
+        let range = Scalar(-height)...Scalar(height - 1)
+        return Matrix.yRamp(shape: shape, range: range)
     }
     
 }
