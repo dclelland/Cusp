@@ -20,29 +20,14 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func frft2D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        let rowsTransformed = applyFrFTToRows(a: a, setup: setup)
-        return rowsTransformed.applyFrFTToColumns(a: a, setup: setup)
-    }
-    
-    private func applyFrFTToRows(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        var result = ComplexMatrix<Scalar>.zeros(shape: shape)
+        var result = self
         
         for i in 0..<shape.rows {
-            let row = self[row: i]
-            let transformedRow = row.frft1D(a: a, setup: setup)
-            result[row: i] = transformedRow
+            result[row: i] = result[row: i].frft1D(a: a, setup: setup)
         }
         
-        return result
-    }
-    
-    private func applyFrFTToColumns(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        var result = ComplexMatrix<Scalar>.zeros(shape: shape)
-        
         for j in 0..<shape.columns {
-            let column = self[column: j]
-            let transformedColumn = column.frft1D(a: a, setup: setup)
-            result[column: j] = transformedColumn
+            result[column: j] = result[column: j].frft1D(a: a, setup: setup)
         }
         
         return result

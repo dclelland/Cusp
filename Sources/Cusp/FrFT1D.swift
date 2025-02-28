@@ -20,11 +20,15 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        guard a != 0 else {
+            return self
+        }
+        
         let inputChirp = ComplexMatrix.frft1DInputChirp(shape: shape, a: a)
         let outputChirp = ComplexMatrix.frft1DOutputChirp(shape: shape, a: a)
         
         let multiplied = self * inputChirp
-        let transformed = multiplied.fft1D(setup: setup)
+        let transformed = multiplied.fft1D(setup: setup).fftShifted()
         let result = transformed * outputChirp
         return result / Scalar.sqrt(Scalar(shape.count))
     }
