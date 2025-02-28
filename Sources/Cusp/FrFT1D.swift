@@ -103,24 +103,24 @@ extension ComplexMatrix where Scalar == Double {
             return ifft1D(setup: setup).fftShifted()
         }
         
-        let theta = a * .pi / 2.0
-        let cotTheta = Scalar.cos(theta) / Scalar.sin(theta)
-        let cscTheta = 1.0 / Scalar.sin(theta)
+        let alpha = a * .pi / 2.0
+        let cotAlpha = 1.0 / Scalar.tan(alpha)
+        let cscAlpha = 1.0 / Scalar.sin(alpha)
         
         let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count)).fftShifted()
         let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count)).fftShifted()
         
-        let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotTheta
-        let cross = (2.0 * xRamp * yRamp) * cscTheta
+        let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotAlpha
+        let cross = (2.0 * xRamp * yRamp) * cscAlpha
         let kernelExponent = (Scalar.pi / Scalar(shape.count)) * (quadratic - cross)
         let kernel: ComplexMatrix = .init(real: kernelExponent.cos(), imaginary: kernelExponent.sin())
         
-        let sgn = Scalar.sin(theta) >= 0 ? 1.0 : -1.0
-        let aThetaLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
-        let aThetaExponent: Scalar = -.pi / 4.0 * sgn - theta / 2.0
-        let aTheta = Complex(length: aThetaLength, phase: aThetaExponent)
+        let sgn = Scalar.sin(alpha) >= 0 ? 1.0 : -1.0
+        let aNormLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(alpha)))
+        let aNormExponent: Scalar = -.pi / 4.0 * sgn - alpha / 2.0
+        let aNorm = Complex(length: aNormLength, phase: aNormExponent)
         
-        let transformed = (kernel <*> self.asColumn()) * aTheta
+        let transformed = (kernel <*> self.asColumn()) * aNorm
         return transformed.asRow()
     }
     
