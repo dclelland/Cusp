@@ -94,21 +94,21 @@ extension ComplexMatrix where Scalar == Double {
             return self
         }
         if abs(aModulo - 1) < epsilon {
-            return fft1D(setup: setup)
+            return fft1D(setup: setup).fftShifted()
         }
         if abs(aModulo - 2) < epsilon {
             return self.reversed()
         }
         if abs(aModulo - 3) < epsilon {
-            return ifft1D(setup: setup)
+            return ifft1D(setup: setup).fftShifted()
         }
         
         let theta = a * .pi / 2.0
-        let cotTheta = 1.0 / Scalar.tan(theta)
+        let cotTheta = Scalar.cos(theta) / Scalar.sin(theta)
         let cscTheta = 1.0 / Scalar.sin(theta)
         
-        let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count))
-        let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count))
+        let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count)).fftShifted()
+        let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count)).fftShifted()
         
         let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotTheta
         let cross = (2.0 * xRamp * yRamp) * cscTheta
