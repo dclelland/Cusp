@@ -28,10 +28,11 @@ extension LCTMatrix where Scalar == Double {
         [.one, .zero]
     ]
     
-    public static func fractionalFourierTransform(angle: Scalar) -> ComplexMatrix<Scalar> {
+    public static func fractionalFourierTransform(a: Scalar) -> ComplexMatrix<Scalar> {
+        let alpha = a * .pi / 2.0
         return [
-            [.init(cos(angle)), .init(sin(angle))],
-            [.init(-sin(angle)), .init(cos(angle))]
+            [.init(cos(alpha)), .init(sin(alpha))],
+            [.init(-sin(alpha)), .init(cos(alpha))]
         ]
     }
     
