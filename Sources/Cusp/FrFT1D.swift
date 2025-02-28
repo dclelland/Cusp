@@ -41,20 +41,20 @@ extension ComplexMatrix where Scalar == Double {
         let alpha = a * .pi / 2.0
         let cotAlpha = 1.0 / Scalar.tan(alpha)
         
-        let xRamp = Matrix.centeredXRamp(shape: .row(length: shape.count))
-        let chirp = xRamp.square() * (.pi * cotAlpha / Scalar(shape.count))
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.count))
+        let phase = ramp.square() * (.pi * cotAlpha / Scalar(shape.count))
         
-        return ComplexMatrix(real: chirp.cos(), imaginary: chirp.sin())
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
     fileprivate static func frft1DOutputChirp(shape: Shape, a: Scalar) -> ComplexMatrix {
         let alpha = a * .pi / 2.0
         let cscAlpha = 1.0 / Scalar.sin(alpha)
         
-        let xRamp = Matrix.centeredXRamp(shape: .row(length: shape.count))
-        let chirp = xRamp.square() * (.pi * cscAlpha / Scalar(shape.count))
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.count))
+        let phase = ramp.square() * (.pi * cscAlpha / Scalar(shape.count))
         
-        return ComplexMatrix(real: chirp.cos(), imaginary: chirp.sin())
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
 }
