@@ -94,33 +94,43 @@ extension ComplexMatrix where Scalar == Double {
             return self
         }
         if abs(aModulo - 1) < epsilon {
-            return fft1D(setup: setup).fftShifted()
+            return fft1D(setup: setup).fftShifted() / Scalar.sqrt(Scalar(shape.count))
         }
         if abs(aModulo - 2) < epsilon {
             return self.reversed()
         }
         if abs(aModulo - 3) < epsilon {
-            return ifft1D(setup: setup).fftShifted()
+            return ifft1D(setup: setup).fftShifted() * Scalar.sqrt(Scalar(shape.count))
         }
         
         let alpha = a * .pi / 2.0
-        let cotAlpha = 1.0 / Scalar.tan(alpha)
-        let cscAlpha = 1.0 / Scalar.sin(alpha)
+        let cotAlpha: Scalar = 1.0 / Scalar.tan(alpha)
+        let cscAlpha: Scalar = 1.0 / Scalar.sin(alpha)
         
         let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count)).fftShifted()
         let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count)).fftShifted()
+        
+//        let normFactor = 1.0 / Scalar.sqrt(Scalar(shape.count))
+////        let temp = Numerics.Complex<Scalar>
+//        let temp = Complex.sqrt(Complex(1.0, -cotAlpha))
+////        var temp = cSqrt({ re: 1, im: -cotAlpha })
+//        let A_norm = Complex(temp.real * normFactor, temp.imaginary * normFactor)
         
         let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotAlpha
         let cross = (2.0 * xRamp * yRamp) * cscAlpha
         let kernelExponent = (Scalar.pi / Scalar(shape.count)) * (quadratic - cross)
         let kernel: ComplexMatrix = .init(real: kernelExponent.cos(), imaginary: kernelExponent.sin())
         
-        let sgn = Scalar.sin(alpha) >= 0 ? 1.0 : -1.0
-        let aNormLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(alpha)))
-        let aNormExponent: Scalar = -.pi / 4.0 * sgn - alpha / 2.0
-        let aNorm = Complex(length: aNormLength, phase: aNormExponent)
+//        let sgn = Scalar.sin(alpha) >= 0 ? 1.0 : -1.0
+//        let aNormLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(alpha)))
+//        let aNormExponent: Scalar = -.pi / 4.0 * sgn - alpha / 2.0
+//        let aNorm = Complex(length: aNormLength, phase: aNormExponent)
         
-        let transformed = (kernel <*> self.asColumn()) * aNorm
+//        print("NORM1", A_norm)
+//        print("NORM2", aNorm)
+//        print(" ")
+        
+        let transformed = (kernel <*> self.asColumn()) / Scalar.sqrt(Scalar(shape.count))
         return transformed.asRow()
     }
     
