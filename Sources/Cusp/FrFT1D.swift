@@ -58,19 +58,3 @@ extension ComplexMatrix where Scalar == Double {
     }
     
 }
-
-extension Matrix where Scalar == Double {
-        
-    fileprivate static func frftXRamp(shape: Shape) -> Matrix {
-        let width = shape.columns / 2
-        let range = Scalar(-width)...Scalar(width - 1)
-        return Matrix.xRamp(shape: shape, range: range)
-    }
-    
-    fileprivate static func frftYRamp(shape: Shape) -> Matrix {
-        let height = shape.rows / 2
-        let range = Scalar(-height)...Scalar(height - 1)
-        return Matrix.yRamp(shape: shape, range: range)
-    }
-    
-}
