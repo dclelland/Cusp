@@ -20,7 +20,7 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        let epsilon = 1e-8
+        let epsilon = 1e-6
         let aModulo = a.truncatingRemainder(dividingBy: 4)
         if abs(aModulo) < epsilon {
             return self
@@ -36,20 +36,23 @@ extension ComplexMatrix where Scalar == Double {
         }
         
         let theta = a * .pi / 2.0
+        let cotTheta = 1.0 / Scalar.tan(theta)
+        let cscTheta = 1.0 / Scalar.sin(theta)
         
         let xRamp: Matrix = .fftXRamp(shape: .square(length: shape.count))
         let yRamp: Matrix = .fftYRamp(shape: .square(length: shape.count))
-        let quadraticPhase: Matrix = (-Scalar.pi * (xRamp.square() + yRamp.square())) / Scalar.tan(theta)
-        let crossCoupling: Matrix = (2.0 * .pi * xRamp * yRamp) / Scalar.sin(theta)
-        let phase: Matrix = (quadraticPhase + crossCoupling) / Scalar(shape.count)
-        let kernel: ComplexMatrix = .init(real: phase.cos(), imaginary: phase.sin())
+        
+        let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotTheta
+        let cross = (2.0 * xRamp * yRamp) * cscTheta
+        let kernelExponent = (Scalar.pi / Scalar(shape.count)) * (quadratic - cross)
+        let kernel: ComplexMatrix = .init(real: kernelExponent.cos(), imaginary: kernelExponent.sin())
         
         let sgn = Scalar.sin(theta) >= 0 ? 1.0 : -1.0
-        let normLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
-        let normPhase: Scalar = -.pi / 4.0 * sgn - theta / 2.0
-        let norm = Complex(length: normLength, phase: normPhase)
+        let aThetaLength: Scalar = 1.0 / Scalar.sqrt(Scalar(shape.count) * abs(Scalar.sin(theta)))
+        let aThetaExponent: Scalar = -.pi / 4.0 * sgn - theta / 2.0
+        let aTheta = Complex(length: aThetaLength, phase: aThetaExponent)
         
-        let transformed = (kernel <*> self.asColumn()) * norm
+        let transformed = (kernel <*> self.asColumn()) * aTheta
         return transformed.asRow()
     }
     
