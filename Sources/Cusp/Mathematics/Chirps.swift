@@ -10,8 +10,8 @@ import Plinth
 
 extension ComplexMatrix where Scalar == Double {
     
-    public static func frftInputChirp(shape: Shape, a: Scalar) -> ComplexMatrix {
-        let alpha = a * .pi / 2.0
+    public static func frftInputChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let alpha = order * .pi / 2.0
         
         let ramp = Matrix.centeredXRamp(shape: shape)
         let factor = .pi / Scalar.tan(alpha) / Scalar(shape.columns)
@@ -20,8 +20,8 @@ extension ComplexMatrix where Scalar == Double {
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
-    public static func frftOutputChirp(shape: Shape, a: Scalar) -> ComplexMatrix {
-        let alpha = a * .pi / 2.0
+    public static func frftOutputChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let alpha = order * .pi / 2.0
         
         let ramp = Matrix.centeredXRamp(shape: shape)
         let factor = .pi / Scalar.sin(alpha) / Scalar(shape.columns)

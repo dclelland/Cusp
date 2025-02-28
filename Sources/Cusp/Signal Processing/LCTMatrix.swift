@@ -46,8 +46,8 @@ extension LCTMatrix where Scalar == Double {
         c: 1.0, d: 0.0
     )
     
-    public static func fractionalFourierTransform(a: Scalar) -> LCTMatrix {
-        let alpha = a * .pi / 2.0
+    public static func fractionalFourierTransform(order: Scalar) -> LCTMatrix {
+        let alpha = order * .pi / 2.0
         return LCTMatrix(
             a: cos(alpha), b: sin(alpha),
             c: -sin(alpha), d: cos(alpha)
