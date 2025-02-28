@@ -41,9 +41,12 @@ import Cusp
 - [x] Write 1D LCT implementation
     - [ ] Add check for `b == 0`, as this causes a division by zero
     - [ ] Should this support imaginary-values matrices?
+    - [ ] Sanity check the fractional order of 0.5 thing
+        - [ ] Perhaps try rendering the chirps
 - [x] Write 2D LCT implementation
 - [x] Write LCT matrix generators
     - Does this need arithmetic operations? Perhaps there is a generic 2x2 complex matrix type somewhere...
+- [ ] Add `Float` and `Double` implementations
 
 # Documentation
 

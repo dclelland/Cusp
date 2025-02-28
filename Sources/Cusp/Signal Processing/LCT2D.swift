@@ -11,7 +11,7 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func lct2D(matrix: ComplexMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func lct2D(matrix: LCTMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         return ComplexMatrix(real: self).lct2D(matrix: matrix, setup: setup)
     }
     
@@ -19,7 +19,7 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func lct2D(matrix: ComplexMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func lct2D(matrix: LCTMatrix<Scalar>, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         var result = self
         
         for i in 0..<shape.rows {
