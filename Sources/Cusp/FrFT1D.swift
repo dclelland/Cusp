@@ -15,10 +15,6 @@ extension Matrix where Scalar == Double {
         return ComplexMatrix(real: self).frft1D(a: a, setup: setup)
     }
     
-    public func frft1DMatrix(a: Scalar) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).frft1DMatrix(a: a)
-    }
-    
 }
 
 extension ComplexMatrix where Scalar == Double {
@@ -31,16 +27,6 @@ extension ComplexMatrix where Scalar == Double {
         let transformed = multiplied.fft1D(setup: setup)
         let result = transformed * outputChirp
         return result / Scalar.sqrt(Scalar(shape.count))
-    }
-    
-    public func frft1DMatrix(a: Scalar) -> ComplexMatrix {
-        guard a != 0 else {
-            return self
-        }
-        
-        let kernel = ComplexMatrix.frft1DKernel(shape: shape, a: a)
-        let transformed = kernel <*> self.asColumn()
-        return transformed.asRow() / Scalar.sqrt(Scalar(shape.count))
     }
     
 }
@@ -65,21 +51,6 @@ extension ComplexMatrix where Scalar == Double {
         let chirp = xRamp.square() * (.pi * cscAlpha / Scalar(shape.count))
         
         return ComplexMatrix(real: chirp.cos(), imaginary: chirp.sin())
-    }
-    
-    fileprivate static func frft1DKernel(shape: Shape, a: Scalar) -> ComplexMatrix {
-        let alpha = a * .pi / 2.0
-        let cotAlpha = 1.0 / Scalar.tan(alpha)
-        let cscAlpha = 1.0 / Scalar.sin(alpha)
-        
-        let xRamp: Matrix = .frftXRamp(shape: .square(length: shape.count))
-        let yRamp: Matrix = .frftYRamp(shape: .square(length: shape.count))
-        
-        let quadratic: Matrix = (xRamp.square() + yRamp.square()) * cotAlpha
-        let cross = (2.0 * xRamp * yRamp) * cscAlpha
-        let phase = (.pi / Scalar(shape.count)) * (quadratic - cross)
-        
-        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
 }
