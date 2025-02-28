@@ -47,7 +47,7 @@ extension ComplexMatrix where Scalar == Double {
     
     fileprivate static func lct1DInputChirp(shape: Shape, a: Scalar, b: Scalar, c: Scalar, d: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: .row(length: shape.count))
-        let factor = (a / (2.0 * b)) * (2 * .pi) / Scalar(shape.count)
+        let factor = (a / (2.0 * b)) * (2.0 * .pi) / Scalar(shape.count)
         let phase = ramp.square() * factor
         
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
@@ -55,7 +55,7 @@ extension ComplexMatrix where Scalar == Double {
     
     fileprivate static func lct1DOutputChirp(shape: Shape, a: Scalar, b: Scalar, c: Scalar, d: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: .row(length: shape.count))
-        let factor = (d / (2.0 * b)) * (2 * .pi) / Scalar(shape.count)
+        let factor = (d / (2.0 * b)) * (2.0 * .pi) / Scalar(shape.count)
         let phase = ramp.square() * factor
         
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
