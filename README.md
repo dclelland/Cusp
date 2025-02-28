@@ -35,12 +35,14 @@ import Cusp
 
 ## Todo
 
-- [ ] Add 1D FFT to Plinth
-- [ ] Write 1D FrFT implementation
-- [ ] Write 2D FrFT implementation
+- [x] Add 1D FFT to Plinth
+- [x] Write 1D FrFT implementation
+- [x] Write 2D FrFT implementation
 - [ ] Write 1D LCT implementation
+    - [ ] Add check for `b == 0`, as this causes a division by zero
+    - [ ] Should this support imaginary-values matrices?
 - [ ] Write 2D LCT implementation
-- [ ] Write LCT matrix generators
+- [x] Write LCT matrix generators
     - Does this need arithmetic operations? Perhaps there is a generic 2x2 complex matrix type somewhere...
 
 # Documentation
