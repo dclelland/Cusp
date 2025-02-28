@@ -21,7 +21,7 @@ extension ComplexMatrix where Scalar == Double {
     
     public func frft1D(a: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let epsilon = 1e-6
-        let aModulo = a.truncatingRemainder(dividingBy: 4)
+        let aModulo = a.mod(4)
         if abs(aModulo) < epsilon {
             return self
         }
@@ -106,6 +106,15 @@ extension ComplexMatrix where Scalar == Double {
         let A = Complex(Scalar.cos(phaseA), Scalar.sin(phaseA)) / Complex(Scalar.sqrt(abs(sinAlpha)))
 
         return y * A
+    }
+    
+}
+
+private extension FloatingPoint {
+    
+    fileprivate func mod(_ modulus: Self) -> Self {
+        let remainder = self.truncatingRemainder(dividingBy: modulus)
+        return remainder < 0 ? remainder + modulus : remainder
     }
     
 }
