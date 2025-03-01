@@ -35,12 +35,9 @@ import Cusp
 
 ## Todo
 
-- [ ] What is the correct way to reconstruct the original image?
-- [ ] Add check in LCT for `b == 0`, as this causes a division by zero
-- [ ] Should the LCT support complex-valued matrices?
-- [ ] Sanity check the fractional order of 0.5 thing
-
-- [ ] Add `Float` and `Double` implementations
+- [x] Add both `Float` and `Double` implementations
+- [ ] Add full handling for the case where `matrix.b.isApproximatelyEqual(to: 0.0)`.
+- [ ] Add support for complex-valued `LCTMatrix`.
 
 # Documentation
 
