@@ -1,6 +1,6 @@
 # Cusp
 
-Hardware-accelerated linear canonical transformation library for Swift.
+Hardware-accelerated fractional Fourier transform library for Swift.
 
 ## Installation
 
@@ -35,9 +35,7 @@ import Cusp
 
 ## Todo
 
-- [x] Add both `Float` and `Double` implementations
-- [ ] Add full handling for the case where `matrix.b.isApproximatelyEqual(to: 0.0)`.
-- [ ] Add support for complex-valued `LCTMatrix`.
+- [ ] Implement fractional Fourier transform based on [`torch_frft`](https://github.com/tunakasif/torch-frft)
 
 # Documentation
 
