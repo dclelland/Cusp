@@ -53,14 +53,13 @@ extension ComplexMatrix where Scalar == Double {
         let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
         let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
-        let scale = 4
         let preChirp = ComplexMatrix.frftPreChirp(shape: .row(length: shape.count), order: order)
-        let postChirp = ComplexMatrix.frftPostChirp(shape: .row(length: shape.count), order: order, scale: scale)
+        let postChirp = ComplexMatrix.frftPostChirp(shape: .row(length: shape.count), order: order)
         
         let multiplied = self * preChirp
-        let transformed = multiplied.padded(right: shape.count * (scale - 1)).fft1D(setup: setup)
+        let transformed = multiplied.fft1D(setup: setup)
         let kernel = postChirp.fftShifted().fft1D(setup: setup)
-        let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.count * (scale - 1))
+        let result = (transformed * kernel).ifft1D(setup: setup)
         
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }

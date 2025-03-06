@@ -27,7 +27,7 @@ import Plinth
 //        }
 //        
 //        for j in 0..<shape.columns {
-//            result[column: j] = result[column: j].frft1D(order: order, setup: setup)
+//            result[column: j] = result[column: j].asRow().frft1D(order: order, setup: setup).asColumn()
 //        }
 //        
 //        return result
