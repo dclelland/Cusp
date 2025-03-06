@@ -40,23 +40,19 @@ extension ComplexMatrix where Scalar == Float {
 extension ComplexMatrix where Scalar == Double {
     
     public static func frftPreChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let phi = order * .pi / 2.0
-        let factor = Complex(0.0, -.pi * tan(phi / 2.0))
-        
-        let ramp = Matrix.centeredXRamp(shape: shape) / Scalar.sqrt(Scalar(shape.length))
-        let chirp = (ComplexMatrix(real: ramp.square()) * factor).exp()
-        
-        return chirp
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let angle = order * .pi / 2.0
+        let factor = -.pi * tan(angle / 2.0) / Scalar(shape.length)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
     public static func frftPostChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let phi = order * .pi / 2.0
-        let factor = Complex(0.0, .pi / sin(phi))
-        
-        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2)) / Scalar.sqrt(Scalar(shape.length))
-        let chirp = (ComplexMatrix(real: ramp.square()) * factor).exp()
-        
-        return chirp
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2))
+        let angle = order * .pi / 2.0
+        let factor = .pi / sin(angle) / Scalar(shape.length)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
 }
