@@ -20,31 +20,29 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        var a = order.remainder(dividingBy: 4.0)
-        
+        let a = order.remainder(dividingBy: 4.0)
         switch a {
+        case -2.0:
+            return bodyReversed()
+        case -2.0..<(-1.5):
+            return interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup).deinterpolated1D()
+        case -1.5..<(-0.5):
+            return interpolated1D(setup: setup)._frft1D(order: a, setup: setup).deinterpolated1D()
+        case -0.5..<0.0:
+            return interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup).deinterpolated1D()
         case 0.0:
             return self
-        case -2.0, 2.0:
-            let head = elements.first!
-            let body = elements.dropFirst()
-            return ComplexMatrix(shape: shape, elements: [head] + body.reversed())
+        case 0.0..<0.5:
+            return interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup).deinterpolated1D()
+        case 0.5..<1.5:
+            return interpolated1D(setup: setup)._frft1D(order: a, setup: setup).deinterpolated1D()
+        case 1.5..<2.0:
+            return interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup).deinterpolated1D()
+        case 2.0:
+            return bodyReversed()
         default:
-            break
+            return ComplexMatrix.zeros(shape: shape)
         }
-        
-        var result = interpolated(setup: setup)
-        
-        switch a {
-        case 0.0..<0.5, 1.5..<2.0:
-            result = result._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)
-        case (-0.5)..<0.0, (-2.0)..<(-1.5):
-            result = result._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)
-        default:
-            result = result._frft1D(order: a, setup: setup)
-        }
-        
-        return result.deinterpolated()
     }
     
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
@@ -79,7 +77,7 @@ extension ComplexMatrix where Scalar == Double {
         let nextPowerTwo = Int(pow(2.0, ceil(log2(Double(N2 + N - 1)))))
         
         // Perform FFT-based convolution
-        /* I think this padding is incorrect. */
+        /* I think this padding is too large. */
         let multipFFT = multiplied.padded(right: nextPowerTwo - multiplied.shape.columns).fft1D(setup: setup)
         let hlptcFFT = hlptc.padded(right: nextPowerTwo - hlptc.shape.columns).fft1D(setup: setup)
         let convResult = (multipFFT * hlptcFFT).ifft1D(setup: setup)
@@ -98,17 +96,35 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    fileprivate func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+    fileprivate func bodyReversed() -> ComplexMatrix {
+        return ComplexMatrix(real: real.bodyReversed(), imaginary: imaginary.bodyReversed())
+    }
+    
+}
+
+extension Matrix where Scalar == Double {
+    
+    fileprivate func bodyReversed() -> Matrix {
+        let head = elements.first!
+        let body = elements.dropFirst()
+        return Matrix(shape: shape, elements: [head] + body.reversed())
+    }
+    
+}
+
+extension ComplexMatrix where Scalar == Double {
+    
+    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         return ComplexMatrix(
-            real: real.interpolated(setup: setup),
-            imaginary: imaginary.interpolated(setup: setup)
+            real: real.interpolated1D(setup: setup),
+            imaginary: imaginary.interpolated1D(setup: setup)
         )
     }
     
-    fileprivate func deinterpolated() -> ComplexMatrix {
+    fileprivate func deinterpolated1D() -> ComplexMatrix {
         return ComplexMatrix(
-            real: real.deinterpolated(),
-            imaginary: imaginary.deinterpolated()
+            real: real.deinterpolated1D(),
+            imaginary: imaginary.deinterpolated1D()
         )
     }
     
@@ -116,19 +132,14 @@ extension ComplexMatrix where Scalar == Double {
 
 extension Matrix where Scalar == Double {
     
-    fileprivate func interpolated(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
+    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
         var fft = upsampled().fft1D(setup: setup)
-        
-        let n = shape.length
-        let n1 = n / 2 + (n % 2)
-        let n2 = 2 * n - (n / 2)
-        let range = n1...(n2 - 1)
-        fft[columns: range] = ComplexMatrix.zeros(shape: .row(length: range.count))
-        
+        let columns = (shape.length / 2)...(shape.length * 2 - shape.length / 2 - 1)
+        fft[columns: columns] = .zeros(shape: .row(length: shape.count))
         return fft.ifft1D(setup: setup).real.padded(left: shape.count, right: shape.count) * 2.0
     }
     
-    fileprivate func deinterpolated() -> Matrix {
+    fileprivate func deinterpolated1D() -> Matrix {
         return cropped(left: shape.count / 4, right: shape.count / 4).downsampled()
     }
     
