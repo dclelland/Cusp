@@ -33,19 +33,14 @@ import Cusp
 - [apple/swift-numerics](https://github.com/apple/swift-numerics)
 - [dclelland/Plinth](https://github.com/dclelland/Plinth)
 
+### References/prior art
+
+- [tunakasif/torch_frft](https://github.com/tunakasif/torch-frft)
+
 ## Todo
 
-- [ ] Implement fractional Fourier transform based on [`torch_frft`](https://github.com/tunakasif/torch-frft)
-    - [x] Remove horizontal shift
-    - [x] Try removing the thing which multiplies the first value by 2.0 for no reason (why does it do that?)
-    - [x] Fix issue where the `reversed()` call is offset
-    - [ ] Tidy up implementation
-        - [x] Extract chirp functions and compare with the LCT ones
-        - [x] Add hardware-accelerated implementations if possible
-        - [ ] Test removing functions that might not be needed
-        - [ ] Pass through the correct-sized FFTSetup
-    - [ ] 2D FFT version
-    - [ ] Can you port the current changes back over to the LCT version?
+- [ ] Figure out how to handle passing through the correct-sized `FFTSetup`
+- [ ] Write faster 2D FFT implementation
 
 # Documentation
 
