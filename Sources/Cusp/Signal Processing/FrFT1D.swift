@@ -77,7 +77,7 @@ extension ComplexMatrix where Scalar == Double {
         
         // Double the first entry (scaling factor for correct normalization)
         var final = decimated
-        final[0, 0] = decimated[0, 0] * Complex(2.0)
+//        final[0, 0] = decimated[0, 0] * Complex(2.0)
         
         return final
     }
@@ -124,7 +124,7 @@ extension ComplexMatrix where Scalar == Double {
 //        let Hc = convResult[columns: (N - 1)...(2 * N - 1)]
         var Hc = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
         for i in 0..<N {
-            Hc[0, i] = convResult[0, i + N - 1]
+            Hc[0, i] = convResult[0, i + N]
         }
         
         // Final chirp multiplication
