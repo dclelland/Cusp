@@ -21,23 +21,9 @@ extension ComplexMatrix where Scalar == Double {
     
     /// Performs a fractional Fourier transform
     public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        fatalError()
-    }
-    
-    
-    private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        fatalError()
-    }
-    
-}
-
-/*
-extension ComplexMatrix where Scalar == Double {
-    
-    /// Performs a fractional Fourier transform
-    public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        // Check if the signal size is even
-        precondition(shape.length % 2 == 0, "Signal size must be even")
+        // Check if signal size is even
+        let N = shape.length
+        precondition(N % 2 == 0, "Signal size must be even")
         
         // Normalize order to [-2, 2] range
         var a = order.truncatingRemainder(dividingBy: 4.0)
@@ -49,30 +35,21 @@ extension ComplexMatrix where Scalar == Double {
         
         // Handle special cases
         if a.isApproximatelyEqual(to: 0.0) {
+            // For order=0, return the input signal unchanged (identity)
             return self
         } else if a.isApproximatelyEqual(to: 2.0) || a.isApproximatelyEqual(to: -2.0) {
-            // Reverse the signal (reflection)
+            // For order=±2, return the signal flipped (reflection)
             return self.reversed()
         }
         
         // Perform band-limited interpolation
-        let biz = self.interpolated1D(setup: setup)
-        let N = shape.length
+        let biz = interpolated1D(setup: setup)
         
-        // Create zeros matrices
-        let zeros = ComplexMatrix.zeros(shape: biz.shape)
+        // Create zeros matrices of the same shape as biz
+        let zeros = ComplexMatrix.zeros(shape: shape)
         
         // Concatenate [zeros, biz, zeros]
-        var concatenated = ComplexMatrix.zeros(shape: .row(length: 3 * N))
-        for i in 0..<N {
-            concatenated[0, i] = Complex.zero
-        }
-        for i in 0..<N {
-            concatenated[0, i + N] = biz[i]
-        }
-        for i in 0..<N {
-            concatenated[0, i + 2 * N] = Complex.zero
-        }
+        let concatenated: ComplexMatrix = [zeros, biz, zeros].concatenatedColumns()
         
         // Handle problematic ranges with decomposition approach
         var result = concatenated
@@ -92,74 +69,58 @@ extension ComplexMatrix where Scalar == Double {
         // Apply the core FrFT for the remaining order
         result = result._frft1D(order: a, setup: setup)
         
-        // Extract the middle part
-        var extracted = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
-        for i in 0..<N {
-            extracted[0, i] = result[0, i + N]
-        }
+        // Extract the middle part of the signal
+        let extracted = result.cropped(to: biz.shape)
         
-        // NOTE: We're skipping the decimation step to maintain the original size
-        // This is a key difference from the PyTorch implementation
+        // Decimate the result (take every other sample)
+        let decimated = extracted.decimated(columns: 2)
         
         // Double the first entry (scaling factor for correct normalization)
-        extracted[0, 0] = extracted[0, 0] * Complex(2.0)
-        
-        return extracted
-        
-        /* Previous implementation; doesn't work, incorrect shapes
-        // Band-limited decimation
-        let decimated = bizDecimate(extracted)
-        
-        // Double the first entry
         var final = decimated
         final[0, 0] = decimated[0, 0] * Complex(2.0)
         
         return final
-         */
     }
     
-    // Core fractional Fourier transform implementation
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        // Constants
         let N = shape.length
         let Nend = N / 2
-        let Nstart = -(N % 2 + Nend)
+        let Nstart = -(N % 2 + N / 2)
         let deltax = Scalar.sqrt(Scalar(N))
         
+        // Calculate parameters
         let phi = order * .pi / 2.0
-        let alpha = Complex(0, -Scalar.pi * Scalar.tan(phi / 2.0))
-        let beta = Complex(0, Scalar.pi / Scalar.sin(phi))
+        let sinPhi = Scalar.sin(phi)
+        let alpha = Complex(0.0, -Scalar.pi * Scalar.tan(phi / 2.0))
+        let beta = Complex(0.0, Scalar.pi / sinPhi)
         
-        let aphiNum = Complex.exp(-Complex(0, .pi * (phi < 0 ? -1.0 : 1.0) / 4.0 - phi / 2.0))
-        let aphiDenom = Scalar.sqrt(Swift.abs(Scalar.sin(phi)))
+        // Calculate amplitude scale factor
+        let aphiNum = Complex.exp(Complex(0.0, -.pi * (sinPhi < 0.0 ? -1.0 : 1.0) / 4.0 - phi / 2.0))
+        let aphiDenom = Scalar.sqrt(Swift.abs(sinPhi))
         let aphi = aphiNum / Complex(aphiDenom)
         
-        // Chirp Multiplication
-        var chirp = ComplexMatrix.zeros(shape: shape)
-        for i in 0..<N {
-            let x = Scalar(Nstart + i) / deltax
-            chirp[0, i] = Complex.exp(alpha * Complex(x * x))
-        }
-        
+        // First chirp multiplication
+        let x = Matrix.centeredXRamp(shape: shape) / deltax
+        let chirp = (ComplexMatrix(real: x.square()) * alpha).exp()
         let multiplied = self * chirp
         
-        // Chirp Convolution
-        var hlptc = ComplexMatrix.zeros(shape: .row(length: 2 * N - 1))
-        for i in 0..<(2 * N - 1) {
-            let t = Scalar(-N + 1 + i) / deltax
-            hlptc[0, i] = Complex.exp(beta * Complex(t * t))
-        }
+        // Chirp for convolution
+        let t = Matrix.centeredXRamp(shape: .row(length: shape.length * 2)) / deltax
+        let hlptc = (ComplexMatrix(real: t.square()) * beta).exp()
         
         // Find next power of two for FFT
         let N2 = hlptc.shape.length
         let nextPowerTwo = Int(pow(2.0, ceil(log2(Double(N2 + N - 1)))))
         
         // Perform FFT-based convolution
+        /* I think this padding is incorrect. */
         let multipFFT = multiplied.padded(to: .row(length: nextPowerTwo)).fft1D(setup: setup)
         let hlptcFFT = hlptc.padded(to: .row(length: nextPowerTwo)).fft1D(setup: setup)
         let convResult = (multipFFT * hlptcFFT).ifft1D(setup: setup)
         
         // Extract the relevant part of the convolution result
-        var Hc = ComplexMatrix.zeros(shape: .row(length: N))
+        var Hc = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
         for i in 0..<N {
             Hc[0, i] = convResult[0, i + N - 1]
         }
@@ -167,12 +128,10 @@ extension ComplexMatrix where Scalar == Double {
         // Final chirp multiplication
         let result = (Hc * chirp * aphi) / deltax
         
-        // Apply adjustment for odd N (not needed since we enforce even N)
         return result
     }
     
 }
- */
 
 extension ComplexMatrix where Scalar == Double {
     
