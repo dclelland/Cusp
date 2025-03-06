@@ -49,9 +49,9 @@ extension ComplexMatrix where Scalar == Double {
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? -1.0 : 1.0
         
-        let factorNumerator = Complex.exp(Complex(0.0, -.pi * sign / 4.0 - alpha / 2.0))
-        let factorDenominator = Complex(Scalar.sqrt(abs(sin(alpha))))
-        let factor = factorNumerator / factorDenominator
+        let phase = -.pi * sign / 4.0 - alpha / 2.0
+        let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
+        let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
         let scale = 4
         let preChirp = ComplexMatrix.frftPreChirp(shape: .row(length: shape.count), order: order)
