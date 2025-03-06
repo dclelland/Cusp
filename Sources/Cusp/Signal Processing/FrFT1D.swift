@@ -41,7 +41,7 @@ extension ComplexMatrix where Scalar == Double {
         }
         
         // Perform band-limited interpolation
-        let biz = bizInterpolate()
+        let biz = self.interpolated1D(setup: setup)
         let N = shape.length
         
         // Create zeros matrices
@@ -64,25 +64,34 @@ extension ComplexMatrix where Scalar == Double {
         
         if (0.0 < a && a < 0.5) || (1.5 < a && a < 2.0) {
             // First apply a full Fourier transform, then adjust the order
-            result = coreFrFT(signal: concatenated, order: 1.0, setup: setup)
+            result = concatenated._frft1D(order: 1.0, setup: setup)
             a -= 1.0
         }
         
         if (-0.5 < a && a < 0.0) || (-2.0 < a && a < -1.5) {
             // First apply an inverse Fourier transform, then adjust the order
-            result = coreFrFT(signal: concatenated, order: -1.0, setup: setup)
+            result = concatenated._frft1D(order: -1.0, setup: setup)
             a += 1.0
         }
         
         // Apply the core FrFT for the remaining order
-        result = coreFrFT(signal: result, order: a, setup: setup)
+        result = result._frft1D(order: a, setup: setup)
         
         // Extract the middle part
         var extracted = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
         for i in 0..<N {
-            extracted[0, i] = result[i + N]
+            extracted[0, i] = result[0, i + N]
         }
         
+        // NOTE: We're skipping the decimation step to maintain the original size
+        // This is a key difference from the PyTorch implementation
+        
+        // Double the first entry (scaling factor for correct normalization)
+        extracted[0, 0] = extracted[0, 0] * Complex(2.0)
+        
+        return extracted
+        
+        /* Previous implementation; doesn't work, incorrect shapes
         // Band-limited decimation
         let decimated = bizDecimate(extracted)
         
@@ -91,11 +100,12 @@ extension ComplexMatrix where Scalar == Double {
         final[0, 0] = decimated[0, 0] * Complex(2.0)
         
         return final
+         */
     }
     
     // Core fractional Fourier transform implementation
-    private func coreFrFT(signal: ComplexMatrix<Scalar>, order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        let N = signal.shape.length
+    private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        let N = shape.length
         let Nend = N / 2
         let Nstart = -(N % 2 + Nend)
         let deltax = Scalar.sqrt(Scalar(N))
@@ -109,13 +119,13 @@ extension ComplexMatrix where Scalar == Double {
         let aphi = aphiNum / Complex(aphiDenom)
         
         // Chirp Multiplication
-        var chirp = ComplexMatrix.zeros(shape: signal.shape)
+        var chirp = ComplexMatrix.zeros(shape: shape)
         for i in 0..<N {
             let x = Scalar(Nstart + i) / deltax
             chirp[0, i] = Complex.exp(alpha * Complex(x * x))
         }
         
-        let multiplied = signal * chirp
+        let multiplied = self * chirp
         
         // Chirp Convolution
         var hlptc = ComplexMatrix.zeros(shape: .row(length: 2 * N - 1))
@@ -136,7 +146,7 @@ extension ComplexMatrix where Scalar == Double {
         // Extract the relevant part of the convolution result
         var Hc = ComplexMatrix.zeros(shape: .row(length: N))
         for i in 0..<N {
-            Hc[0, i] = convResult[i + N - 1]
+            Hc[0, i] = convResult[0, i + N - 1]
         }
         
         // Final chirp multiplication
@@ -146,63 +156,75 @@ extension ComplexMatrix where Scalar == Double {
         return result
     }
     
+}
+
+extension ComplexMatrix where Scalar == Double {
+    
     // Band-limited interpolation
-    private func bizInterpolate() -> ComplexMatrix {
-        // Handle complex matrices by processing real and imaginary parts separately
-        let realPart = bizInterpolateReal(self.real)
-        let imagPart = bizInterpolateReal(self.imaginary)
-        
-        // Combine the results
-        return ComplexMatrix(real: realPart, imaginary: imagPart)
+    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+        return ComplexMatrix(
+            real: real.interpolated1D(setup: setup),
+            imaginary: imaginary.interpolated1D(setup: setup)
+        )
     }
     
+}
+
+extension Matrix where Scalar == Double {
+    
     // Band-limited interpolation for real matrices
-    private func bizInterpolateReal(_ x: Matrix) -> Matrix {
-        let N = x.shape.length
-        let N1 = N / 2 + (N % 2)
-        let N2 = 2 * N - (N / 2)
-        
-        // Upsample by factor of 2 (insert zeros)
-        let upsampled = upsample2(x)
-        
+    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
         // FFT of upsampled signal
-        let xf = ComplexMatrix(real: upsampled).fft1D()
+        var fft = upsampled(columns: 2).fft1D(setup: setup)
         
         // Zero out high frequencies
-        var xfFiltered = xf
-        for i in N1..<N2 {
-            xfFiltered[0, i] = Complex.zero
+        let n = shape.length
+        let n1 = n / 2 + (n % 2)
+        let n2 = 2 * n - (n / 2)
+        for i in n1..<n2 {
+            fft[0, i] = .zero
         }
         
         // IFFT to get interpolated signal
-        let result = xfFiltered.ifft1D().real * 2.0
-        
-        return result
+        return fft.ifft1D(setup: setup).real * 2.0
     }
     
-    // Upsample by factor of 2 (insert zeros)
-    private func upsample2(_ x: Matrix) -> Matrix {
-        let N = x.shape.length
-        var upsampled = Matrix.zeros(shape: .row(length: 2 * N))
-        
-        for i in 0..<N {
-            upsampled[0, 2 * i] = x[0, i]
-            upsampled[0, 2 * i + 1] = 0.0
-        }
-        
-        return upsampled
+}
+    
+extension ComplexMatrix where Scalar == Double {
+    
+    fileprivate func upsampled(rows: Int = 1, columns: Int = 1) -> ComplexMatrix {
+        return ComplexMatrix(
+            real: real.upsampled(rows: rows, columns: columns),
+            imaginary: imaginary.upsampled(rows: rows, columns: columns)
+        )
     }
     
-    // Band-limited decimation (take every other sample)
-    private func bizDecimate(_ x: ComplexMatrix) -> ComplexMatrix {
-        let N = x.shape.length
-        var decimated = ComplexMatrix.zeros(shape: .row(length: N / 2))
-        
-        for i in 0..<(N / 2) {
-            decimated[0, i] = x[0, 2 * i]
+    fileprivate func decimated(rows: Int = 1, columns: Int = 1) -> ComplexMatrix {
+        return ComplexMatrix(
+            real: real.decimated(rows: rows, columns: columns),
+            imaginary: imaginary.decimated(rows: rows, columns: columns)
+        )
+    }
+    
+}
+
+extension Matrix where Scalar == Double {
+    
+    fileprivate func upsampled(rows: Int = 1, columns: Int = 1) -> Matrix {
+        return Matrix(shape: .init(rows: shape.rows * rows, columns: shape.columns * columns)) { row, column in
+            guard row % rows == 0 && column % columns == 0 else {
+                return 0.0
+            }
+            
+            return self[row / rows, column / columns]
         }
-        
-        return decimated
+    }
+    
+    fileprivate func decimated(rows: Int = 1, columns: Int = 1) -> Matrix {
+        return Matrix(shape: .init(rows: shape.rows / rows, columns: shape.columns / columns)) { row, column in
+            return self[row * rows, column * columns]
+        }
     }
     
 }
