@@ -1,5 +1,5 @@
 //
-//  Scalar1D.swift
+//  FrFT1D.swift
 //  Cusp
 //
 //  Created by June Russell on 02/03/2025.
@@ -17,6 +17,21 @@ extension Matrix where Scalar == Double {
     
 }
 
+extension ComplexMatrix where Scalar == Double {
+    
+    /// Performs a fractional Fourier transform
+    public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        fatalError()
+    }
+    
+    
+    private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+        fatalError()
+    }
+    
+}
+
+/*
 extension ComplexMatrix where Scalar == Double {
     
     /// Performs a fractional Fourier transform
@@ -157,6 +172,7 @@ extension ComplexMatrix where Scalar == Double {
     }
     
 }
+ */
 
 extension ComplexMatrix where Scalar == Double {
     
