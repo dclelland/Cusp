@@ -38,9 +38,11 @@ import Cusp
 - [ ] Implement fractional Fourier transform based on [`torch_frft`](https://github.com/tunakasif/torch-frft)
     - [x] Remove horizontal shift
     - [x] Try removing the thing which multiplies the first value by 2.0 for no reason (why does it do that?)
-    - [ ] Fix issue where the `reversed()` call is offset
+    - [x] Fix issue where the `reversed()` call is offset
     - [ ] Tidy up implementation
         - [ ] Extract chirp functions and compare with the LCT ones
+        - [ ] Add hardware-accelerated implementations if possible
+        - [ ] Test removing functions that might not be needed
     - [ ] 2D FFT version
     - [ ] Can you port the current changes back over to the LCT version?
 

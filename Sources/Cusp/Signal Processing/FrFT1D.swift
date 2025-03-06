@@ -39,7 +39,9 @@ extension ComplexMatrix where Scalar == Double {
             return self
         } else if a.isApproximatelyEqual(to: 2.0) || a.isApproximatelyEqual(to: -2.0) {
             // For order=±2, return the signal flipped (reflection)
-            return self.reversed()
+//            return self.reversed()
+            let (head, body) = (elements.first!, elements.dropFirst())
+            return ComplexMatrix(shape: shape, elements: [head] + body.reversed())
         }
         
         // Perform band-limited interpolation
@@ -73,7 +75,8 @@ extension ComplexMatrix where Scalar == Double {
         let extracted = result.cropped(to: biz.shape)
         
         // Decimate the result (take every other sample)
-        let decimated = extracted.decimated(columns: 2)
+//        let decimated = extracted.downsampled(columns: 2)
+        let decimated = extracted.downsampled()
         
         // Double the first entry (scaling factor for correct normalization)
         var final = decimated
@@ -120,12 +123,8 @@ extension ComplexMatrix where Scalar == Double {
         let convResult = (multipFFT * hlptcFFT).ifft1D(setup: setup)
         
         // Extract the relevant part of the convolution result
-//        print(order, N, N - 1, 2 * N - 2, (N - 1)...(2 * N - 2))
-//        let Hc = convResult[columns: (N - 1)...(2 * N - 1)]
         var Hc = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
-        for i in 0..<N {
-            Hc[0, i] = convResult[0, i + N]
-        }
+        Hc[columns: 0...(N - 1)] = convResult[columns: N...(2 * N - 1)]
         
         // Final chirp multiplication
         let result = (Hc * chirp * aphi) / deltax
@@ -158,9 +157,8 @@ extension Matrix where Scalar == Double {
         let n = shape.length
         let n1 = n / 2 + (n % 2)
         let n2 = 2 * n - (n / 2)
-        for i in n1..<n2 {
-            fft[0, i] = .zero
-        }
+        let range = n1...(n2 - 1)
+        fft[columns: range] = ComplexMatrix.zeros(shape: .row(length: range.count))
         
         // IFFT to get interpolated signal
         return fft.ifft1D(setup: setup).real * 2.0
@@ -177,13 +175,6 @@ extension ComplexMatrix where Scalar == Double {
         )
     }
     
-    fileprivate func decimated(rows: Int = 1, columns: Int = 1) -> ComplexMatrix {
-        return ComplexMatrix(
-            real: real.decimated(rows: rows, columns: columns),
-            imaginary: imaginary.decimated(rows: rows, columns: columns)
-        )
-    }
-    
 }
 
 extension Matrix where Scalar == Double {
@@ -195,12 +186,6 @@ extension Matrix where Scalar == Double {
             }
             
             return self[row / rows, column / columns]
-        }
-    }
-    
-    fileprivate func decimated(rows: Int = 1, columns: Int = 1) -> Matrix {
-        return Matrix(shape: .init(rows: shape.rows / rows, columns: shape.columns / columns)) { row, column in
-            return self[row * rows, column * columns]
         }
     }
     
