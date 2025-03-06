@@ -63,15 +63,14 @@ extension ComplexMatrix where Scalar == Double {
         let nextPowerTwo = Int(pow(2.0, ceil(log2(Double(shape.length * 4)))))
         
         let multiplied = self * preChirp
-        let transformed = multiplied
-            .padded(right: shape.length * 3)
-            .fft1D(setup: setup)
-        let kernel = postChirp
-            .padded(right: shape.length * 2)
-            .fft1D(setup: setup)
-        let result = (transformed * kernel)
-            .ifft1D(setup: setup)
-            .cropped(left: shape.length, right: shape.length * 2)
+        let transformed = multiplied.padded(right: shape.length).fft1D(setup: setup)
+        let kernel = postChirp.fft1D(setup: setup)
+        let result = (transformed * kernel).ifft1D(setup: setup).cropped(left: shape.length)
+        
+//        let multiplied = self * preChirp
+//        let transformed = multiplied.padded(right: shape.length * 3).fft1D(setup: setup)
+//        let kernel = postChirp.padded(right: shape.length * 3).fft1D(setup: setup)
+//        let result = (transformed * kernel).ifft1D(setup: setup).cropped(left: shape.length, right: shape.length * 2)
         
         return (result * preChirp * aphi) / Scalar.sqrt(Scalar(shape.count))
     }
