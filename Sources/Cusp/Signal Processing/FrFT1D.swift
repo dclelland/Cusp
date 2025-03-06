@@ -2,7 +2,7 @@
 //  FrFT1D.swift
 //  Cusp
 //
-//  Created by June Russell on 02/03/2025.
+//  Created by Daniel Clelland on 02/03/2025.
 //
 
 import Foundation
@@ -63,24 +63,6 @@ extension ComplexMatrix where Scalar == Double {
         let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.count * (scale - 1))
         
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
-    }
-    
-}
-
-extension ComplexMatrix where Scalar == Double {
-    
-    fileprivate func bodyReversed() -> ComplexMatrix {
-        return ComplexMatrix(real: real.bodyReversed(), imaginary: imaginary.bodyReversed())
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
-    
-    fileprivate func bodyReversed() -> Matrix {
-        let head = elements.first!
-        let body = elements.dropFirst()
-        return Matrix(shape: shape, elements: [head] + body.reversed())
     }
     
 }

@@ -2,7 +2,7 @@
 //  FrFT2D.swift
 //  Cusp
 //
-//  Created by June Russell on 02/03/2025.
+//  Created by Daniel Clelland on 02/03/2025.
 //
 
 import Foundation
