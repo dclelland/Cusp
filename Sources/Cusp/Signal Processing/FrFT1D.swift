@@ -19,70 +19,32 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    /// Performs a fractional Fourier transform
     public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        // Check if signal size is even
-        let N = shape.length
-        precondition(N % 2 == 0, "Signal size must be even")
+        var a = order.remainder(dividingBy: 4.0)
         
-        // Normalize order to [-2, 2] range
-        var a = order.truncatingRemainder(dividingBy: 4.0)
-        if a > 2.0 {
-            a -= 4.0
-        } else if a < -2.0 {
-            a += 4.0
-        }
-        
-        // Handle special cases
-        if a.isApproximatelyEqual(to: 0.0) {
-            // For order=0, return the input signal unchanged (identity)
+        switch a {
+        case 0.0:
             return self
-        } else if a.isApproximatelyEqual(to: 2.0) || a.isApproximatelyEqual(to: -2.0) {
-            // For order=±2, return the signal flipped (reflection)
-//            return self.reversed()
-            let (head, body) = (elements.first!, elements.dropFirst())
+        case -2.0, 2.0:
+            let head = elements.first!
+            let body = elements.dropFirst()
             return ComplexMatrix(shape: shape, elements: [head] + body.reversed())
+        default:
+            break
         }
         
-        // Perform band-limited interpolation
-        let biz = interpolated1D(setup: setup)
+        var result = interpolated(setup: setup)
         
-        // Create zeros matrices of the same shape as biz
-        let zeros = ComplexMatrix.zeros(shape: shape)
-        
-        // Concatenate [zeros, biz, zeros]
-        let concatenated: ComplexMatrix = [zeros, biz, zeros].concatenatedColumns()
-        
-        // Handle problematic ranges with decomposition approach
-        var result = concatenated
-        
-        if (0.0 < a && a < 0.5) || (1.5 < a && a < 2.0) {
-            // First apply a full Fourier transform, then adjust the order
-            result = concatenated._frft1D(order: 1.0, setup: setup)
-            a -= 1.0
+        switch a {
+        case 0.0..<0.5, 1.5..<2.0:
+            result = result._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)
+        case (-0.5)..<0.0, (-2.0)..<(-1.5):
+            result = result._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)
+        default:
+            result = result._frft1D(order: a, setup: setup)
         }
         
-        if (-0.5 < a && a < 0.0) || (-2.0 < a && a < -1.5) {
-            // First apply an inverse Fourier transform, then adjust the order
-            result = concatenated._frft1D(order: -1.0, setup: setup)
-            a += 1.0
-        }
-        
-        // Apply the core FrFT for the remaining order
-        result = result._frft1D(order: a, setup: setup)
-        
-        // Extract the middle part of the signal
-        let extracted = result.cropped(to: biz.shape)
-        
-        // Decimate the result (take every other sample)
-//        let decimated = extracted.downsampled(columns: 2)
-        let decimated = extracted.downsampled()
-        
-        // Double the first entry (scaling factor for correct normalization)
-        var final = decimated
-//        final[0, 0] = decimated[0, 0] * Complex(2.0)
-        
-        return final
+        return result.deinterpolated()
     }
     
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
@@ -136,11 +98,17 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    // Band-limited interpolation
-    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+    fileprivate func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         return ComplexMatrix(
-            real: real.interpolated1D(setup: setup),
-            imaginary: imaginary.interpolated1D(setup: setup)
+            real: real.interpolated(setup: setup),
+            imaginary: imaginary.interpolated(setup: setup)
+        )
+    }
+    
+    fileprivate func deinterpolated() -> ComplexMatrix {
+        return ComplexMatrix(
+            real: real.deinterpolated(),
+            imaginary: imaginary.deinterpolated()
         )
     }
     
@@ -148,20 +116,20 @@ extension ComplexMatrix where Scalar == Double {
 
 extension Matrix where Scalar == Double {
     
-    // Band-limited interpolation for real matrices
-    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
-        // FFT of upsampled signal
+    fileprivate func interpolated(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
         var fft = upsampled().fft1D(setup: setup)
         
-        // Zero out high frequencies
         let n = shape.length
         let n1 = n / 2 + (n % 2)
         let n2 = 2 * n - (n / 2)
         let range = n1...(n2 - 1)
         fft[columns: range] = ComplexMatrix.zeros(shape: .row(length: range.count))
         
-        // IFFT to get interpolated signal
-        return fft.ifft1D(setup: setup).real * 2.0
+        return fft.ifft1D(setup: setup).real.padded(left: shape.count, right: shape.count) * 2.0
+    }
+    
+    fileprivate func deinterpolated() -> Matrix {
+        return cropped(left: shape.count / 4, right: shape.count / 4).downsampled()
     }
     
 }
