@@ -47,16 +47,11 @@ extension ComplexMatrix where Scalar == Double {
     
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         // Constants
-        let N = shape.length
-        let Nend = N / 2
-        let Nstart = -(N % 2 + N / 2)
-        let deltax = Scalar.sqrt(Scalar(N))
+        let deltax = Scalar.sqrt(Scalar(shape.count))
         
         // Calculate parameters
         let phi = order * .pi / 2.0
         let sinPhi = Scalar.sin(phi)
-        let alpha = Complex(0.0, -Scalar.pi * Scalar.tan(phi / 2.0))
-        let beta = Complex(0.0, Scalar.pi / sinPhi)
         
         // Calculate amplitude scale factor
         let aphiNum = Complex.exp(Complex(0.0, -.pi * (sinPhi < 0.0 ? -1.0 : 1.0) / 4.0 - phi / 2.0))
@@ -64,22 +59,21 @@ extension ComplexMatrix where Scalar == Double {
         let aphi = aphiNum / Complex(aphiDenom)
         
         // First chirp multiplication
-        let x = Matrix.centeredXRamp(shape: shape) / deltax
-        let chirp = (ComplexMatrix(real: x.square()) * alpha).exp()
-        let multiplied = self * chirp
+        let preChirp = ComplexMatrix.frftPreChirp(shape: shape, order: order)
+        let multiplied = self * preChirp
         
         // Chirp for convolution
-        let t = Matrix.centeredXRamp(shape: .row(length: shape.length * 2)) / deltax
-        let hlptc = (ComplexMatrix(real: t.square()) * beta).exp()
+        let postChirp = ComplexMatrix.frftPostChirp(shape: shape, order: order)
         
         // Find next power of two for FFT
-        let N2 = hlptc.shape.length
+        let N = shape.length
+        let N2 = postChirp.shape.length
         let nextPowerTwo = Int(pow(2.0, ceil(log2(Double(N2 + N - 1)))))
         
         // Perform FFT-based convolution
         /* I think this padding is too large. */
         let multipFFT = multiplied.padded(right: nextPowerTwo - multiplied.shape.columns).fft1D(setup: setup)
-        let hlptcFFT = hlptc.padded(right: nextPowerTwo - hlptc.shape.columns).fft1D(setup: setup)
+        let hlptcFFT = postChirp.padded(right: nextPowerTwo - postChirp.shape.columns).fft1D(setup: setup)
         let convResult = (multipFFT * hlptcFFT).ifft1D(setup: setup)
         
         // Extract the relevant part of the convolution result
@@ -87,7 +81,7 @@ extension ComplexMatrix where Scalar == Double {
         Hc[columns: 0...(N - 1)] = convResult[columns: N...(2 * N - 1)]
         
         // Final chirp multiplication
-        let result = (Hc * chirp * aphi) / deltax
+        let result = (Hc * preChirp * aphi) / deltax
         
         return result
     }
