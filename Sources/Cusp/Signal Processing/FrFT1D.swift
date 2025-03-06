@@ -54,13 +54,13 @@ extension ComplexMatrix where Scalar == Double {
         let factor = factorNumerator / factorDenominator
         
         let scale = 4
-        let preChirp = ComplexMatrix.frftPreChirp(shape: shape, order: order)
-        let postChirp = ComplexMatrix.frftPostChirp(shape: shape, order: order, scale: scale)
+        let preChirp = ComplexMatrix.frftPreChirp(shape: .row(length: shape.count), order: order)
+        let postChirp = ComplexMatrix.frftPostChirp(shape: .row(length: shape.count), order: order, scale: scale)
         
         let multiplied = self * preChirp
-        let transformed = multiplied.padded(right: shape.length * (scale - 1)).fft1D(setup: setup)
+        let transformed = multiplied.padded(right: shape.count * (scale - 1)).fft1D(setup: setup)
         let kernel = postChirp.fftShifted().fft1D(setup: setup)
-        let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.length * (scale - 1))
+        let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.count * (scale - 1))
         
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
@@ -106,18 +106,18 @@ extension ComplexMatrix where Scalar == Double {
 extension Matrix where Scalar == Double {
     
     fileprivate func interpolated1D(factor: Int = 2, setup: FFT<Scalar>.Setup? = nil) -> Matrix {
-        let length = shape.length * factor
+        let count = shape.count * factor
         var fft = upsampled(factor: factor).fft1D(setup: setup)
         if factor > 1 {
-            let columns = (shape.length / 2)...(length - shape.length / 2 - 1)
+            let columns = (shape.count / 2)...(count - shape.count / 2 - 1)
             fft[columns: columns] = .zeros(shape: .row(length: columns.count))
         }
-        return fft.ifft1D(setup: setup).real.padded(left: length / 2, right: length / 2) * Scalar(factor)
+        return fft.ifft1D(setup: setup).real.padded(left: count / 2, right: count / 2) * Scalar(factor)
     }
     
     fileprivate func deinterpolated1D(factor: Int = 2) -> Matrix {
-        let length = shape.count / 4
-        return cropped(left: length, right: length).downsampled(factor: factor)
+        let count = shape.count / 2
+        return cropped(left: count / 2, right: count / 2).downsampled(factor: factor)
     }
     
 }

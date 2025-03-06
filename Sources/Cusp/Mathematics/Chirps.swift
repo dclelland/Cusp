@@ -13,15 +13,15 @@ extension ComplexMatrix where Scalar == Float {
     public static func frftPreChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: shape)
         let alpha = order * .pi / 2.0
-        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.length)
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
     public static func frftPostChirp(shape: Shape, order: Scalar, scale: Int = 1) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * scale))
+        let ramp = Matrix.centeredXRamp(shape: .init(rows: shape.rows, columns: shape.columns * scale))
         let alpha = order * .pi / 2.0
-        let factor = .pi / sin(alpha) / Scalar(shape.length)
+        let factor = .pi / sin(alpha) / Scalar(shape.columns)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
@@ -61,15 +61,15 @@ extension ComplexMatrix where Scalar == Double {
     public static func frftPreChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: shape)
         let alpha = order * .pi / 2.0
-        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.length)
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
     public static func frftPostChirp(shape: Shape, order: Scalar, scale: Int = 1) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * scale))
+        let ramp = Matrix.centeredXRamp(shape: .init(rows: shape.rows, columns: shape.columns * scale))
         let alpha = order * .pi / 2.0
-        let factor = .pi / sin(alpha) / Scalar(shape.length)
+        let factor = .pi / sin(alpha) / Scalar(shape.columns)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }

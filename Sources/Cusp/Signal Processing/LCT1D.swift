@@ -24,8 +24,8 @@ extension ComplexMatrix where Scalar == Float {
             return self
         }
         
-        let preChirp = ComplexMatrix.lctPreChirp(shape: .row(length: shape.length), matrix: matrix)
-        let postChirp = ComplexMatrix.lctPostChirp(shape: .row(length: shape.length), matrix: matrix)
+        let preChirp = ComplexMatrix.lctPreChirp(shape: .row(length: shape.count), matrix: matrix)
+        let postChirp = ComplexMatrix.lctPostChirp(shape: .row(length: shape.count), matrix: matrix)
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup).fftShifted()
@@ -51,8 +51,8 @@ extension ComplexMatrix where Scalar == Double {
             return self
         }
         
-        let preChirp = ComplexMatrix.lctPreChirp(shape: .row(length: shape.length), matrix: matrix)
-        let postChirp = ComplexMatrix.lctPostChirp(shape: .row(length: shape.length), matrix: matrix)
+        let preChirp = ComplexMatrix.lctPreChirp(shape: .row(length: shape.columns), matrix: matrix)
+        let postChirp = ComplexMatrix.lctPostChirp(shape: .row(length: shape.columns), matrix: matrix)
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup).fftShifted()

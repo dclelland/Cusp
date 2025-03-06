@@ -40,9 +40,10 @@ import Cusp
     - [x] Try removing the thing which multiplies the first value by 2.0 for no reason (why does it do that?)
     - [x] Fix issue where the `reversed()` call is offset
     - [ ] Tidy up implementation
-        - [ ] Extract chirp functions and compare with the LCT ones
-        - [ ] Add hardware-accelerated implementations if possible
+        - [x] Extract chirp functions and compare with the LCT ones
+        - [x] Add hardware-accelerated implementations if possible
         - [ ] Test removing functions that might not be needed
+        - [ ] Pass through the correct-sized FFTSetup
     - [ ] 2D FFT version
     - [ ] Can you port the current changes back over to the LCT version?
 
