@@ -105,15 +105,19 @@ extension ComplexMatrix where Scalar == Double {
 
 extension Matrix where Scalar == Double {
     
-    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
-        var fft = upsampled().fft1D(setup: setup)
-        let columns = (shape.length / 2)...(shape.length * 2 - shape.length / 2 - 1)
-        fft[columns: columns] = .zeros(shape: .row(length: shape.count))
-        return fft.ifft1D(setup: setup).real.padded(left: shape.count, right: shape.count) * 2.0
+    fileprivate func interpolated1D(factor: Int = 2, setup: FFT<Scalar>.Setup? = nil) -> Matrix {
+        let length = shape.length * factor
+        var fft = upsampled(factor: factor).fft1D(setup: setup)
+        if factor > 1 {
+            let columns = (shape.length / 2)...(length - shape.length / 2 - 1)
+            fft[columns: columns] = .zeros(shape: .row(length: columns.count))
+        }
+        return fft.ifft1D(setup: setup).real.padded(left: length / 2, right: length / 2) * Scalar(factor)
     }
     
-    fileprivate func deinterpolated1D() -> Matrix {
-        return cropped(left: shape.count / 4, right: shape.count / 4).downsampled()
+    fileprivate func deinterpolated1D(factor: Int = 2) -> Matrix {
+        let length = shape.count / 4
+        return cropped(left: length, right: length).downsampled(factor: factor)
     }
     
 }
