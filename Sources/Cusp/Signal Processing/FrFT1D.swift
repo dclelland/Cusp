@@ -115,11 +115,13 @@ extension ComplexMatrix where Scalar == Double {
         
         // Perform FFT-based convolution
         /* I think this padding is incorrect. */
-        let multipFFT = multiplied.padded(to: .row(length: nextPowerTwo)).fft1D(setup: setup)
-        let hlptcFFT = hlptc.padded(to: .row(length: nextPowerTwo)).fft1D(setup: setup)
+        let multipFFT = multiplied.padded(right: nextPowerTwo - multiplied.shape.columns).fft1D(setup: setup)
+        let hlptcFFT = hlptc.padded(right: nextPowerTwo - hlptc.shape.columns).fft1D(setup: setup)
         let convResult = (multipFFT * hlptcFFT).ifft1D(setup: setup)
         
         // Extract the relevant part of the convolution result
+//        print(order, N, N - 1, 2 * N - 2, (N - 1)...(2 * N - 2))
+//        let Hc = convResult[columns: (N - 1)...(2 * N - 1)]
         var Hc = ComplexMatrix<Scalar>.zeros(shape: .row(length: N))
         for i in 0..<N {
             Hc[0, i] = convResult[0, i + N - 1]
