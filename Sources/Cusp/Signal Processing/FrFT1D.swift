@@ -46,33 +46,23 @@ extension ComplexMatrix where Scalar == Double {
     }
     
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
-        // Calculate parameters
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? -1.0 : 1.0
         
-        // Calculate amplitude scale factor
-        let aphiNum = Complex.exp(Complex(0.0, -.pi * sign / 4.0 - alpha / 2.0))
-        let aphiDenom = Scalar.sqrt(abs(sin(alpha)))
-        let aphi = aphiNum / Complex(aphiDenom)
+        let factorNumerator = Complex.exp(Complex(0.0, -.pi * sign / 4.0 - alpha / 2.0))
+        let factorDenominator = Complex(Scalar.sqrt(abs(sin(alpha))))
+        let factor = factorNumerator / factorDenominator
         
-        // First chirp multiplication
+        let scale = 4
         let preChirp = ComplexMatrix.frftPreChirp(shape: shape, order: order)
-        let postChirp = ComplexMatrix.frftPostChirp(shape: shape, order: order)
-        
-        // Find next power of two for FFT
-        let nextPowerTwo = Int(pow(2.0, ceil(log2(Double(shape.length * 4)))))
+        let postChirp = ComplexMatrix.frftPostChirp(shape: shape, order: order, scale: scale)
         
         let multiplied = self * preChirp
-        let transformed = multiplied.padded(right: shape.length).fft1D(setup: setup)
-        let kernel = postChirp.fft1D(setup: setup)
-        let result = (transformed * kernel).ifft1D(setup: setup).cropped(left: shape.length)
+        let transformed = multiplied.padded(right: shape.length * (scale - 1)).fft1D(setup: setup)
+        let kernel = postChirp.fftShifted().fft1D(setup: setup)
+        let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.length * (scale - 1))
         
-//        let multiplied = self * preChirp
-//        let transformed = multiplied.padded(right: shape.length * 3).fft1D(setup: setup)
-//        let kernel = postChirp.padded(right: shape.length * 3).fft1D(setup: setup)
-//        let result = (transformed * kernel).ifft1D(setup: setup).cropped(left: shape.length, right: shape.length * 2)
-        
-        return (result * preChirp * aphi) / Scalar.sqrt(Scalar(shape.count))
+        return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
     
 }

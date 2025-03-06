@@ -18,8 +18,8 @@ extension ComplexMatrix where Scalar == Float {
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
-    public static func frftPostChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2))
+    public static func frftPostChirp(shape: Shape, order: Scalar, scale: Int = 1) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * scale))
         let alpha = order * .pi / 2.0
         let factor = .pi / sin(alpha) / Scalar(shape.length)
         let phase = ramp.square() * factor
@@ -66,8 +66,8 @@ extension ComplexMatrix where Scalar == Double {
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
-    public static func frftPostChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2))
+    public static func frftPostChirp(shape: Shape, order: Scalar, scale: Int = 1) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * scale))
         let alpha = order * .pi / 2.0
         let factor = .pi / sin(alpha) / Scalar(shape.length)
         let phase = ramp.square() * factor
