@@ -151,7 +151,7 @@ extension Matrix where Scalar == Double {
     // Band-limited interpolation for real matrices
     fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
         // FFT of upsampled signal
-        var fft = upsampled(columns: 2).fft1D(setup: setup)
+        var fft = upsampled().fft1D(setup: setup)
         
         // Zero out high frequencies
         let n = shape.length
@@ -162,31 +162,6 @@ extension Matrix where Scalar == Double {
         
         // IFFT to get interpolated signal
         return fft.ifft1D(setup: setup).real * 2.0
-    }
-    
-}
-    
-extension ComplexMatrix where Scalar == Double {
-    
-    fileprivate func upsampled(rows: Int = 1, columns: Int = 1) -> ComplexMatrix {
-        return ComplexMatrix(
-            real: real.upsampled(rows: rows, columns: columns),
-            imaginary: imaginary.upsampled(rows: rows, columns: columns)
-        )
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
-    
-    fileprivate func upsampled(rows: Int = 1, columns: Int = 1) -> Matrix {
-        return Matrix(shape: .init(rows: shape.rows * rows, columns: shape.columns * columns)) { row, column in
-            guard row % rows == 0 && column % columns == 0 else {
-                return 0.0
-            }
-            
-            return self[row / rows, column / columns]
-        }
     }
     
 }
