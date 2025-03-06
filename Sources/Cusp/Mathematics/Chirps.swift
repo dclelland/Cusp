@@ -6,8 +6,27 @@
 //
 
 import Foundation
-import Numerics
 import Plinth
+
+extension ComplexMatrix where Scalar == Float {
+    
+    public static func frftPreChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let alpha = order * .pi / 2.0
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.length)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    }
+    
+    public static func frftPostChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2))
+        let alpha = order * .pi / 2.0
+        let factor = .pi / sin(alpha) / Scalar(shape.length)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    }
+    
+}
 
 extension ComplexMatrix where Scalar == Float {
     
@@ -41,16 +60,16 @@ extension ComplexMatrix where Scalar == Double {
     
     public static func frftPreChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: shape)
-        let angle = order * .pi / 2.0
-        let factor = -.pi * tan(angle / 2.0) / Scalar(shape.length)
+        let alpha = order * .pi / 2.0
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.length)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
     public static func frftPostChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
         let ramp = Matrix.centeredXRamp(shape: .row(length: shape.length * 2))
-        let angle = order * .pi / 2.0
-        let factor = .pi / sin(angle) / Scalar(shape.length)
+        let alpha = order * .pi / 2.0
+        let factor = .pi / sin(alpha) / Scalar(shape.length)
         let phase = ramp.square() * factor
         return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
