@@ -25,19 +25,19 @@ extension ComplexMatrix where Scalar == Double {
         case -2.0:
             return bodyReversed()
         case -2.0..<(-1.5):
-            return interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
         case -1.5..<(-0.5):
-            return interpolated1D(setup: setup)._frft1D(order: a, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
         case -0.5..<0.0:
-            return interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
         case 0.0:
             return self
         case 0.0..<0.5:
-            return interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
         case 0.5..<1.5:
-            return interpolated1D(setup: setup)._frft1D(order: a, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
         case 1.5..<2.0:
-            return interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup).deinterpolated1D()
+            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
         case 2.0:
             return bodyReversed()
         default:
@@ -64,36 +64,14 @@ extension ComplexMatrix where Scalar == Double {
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
     
-}
-
-extension ComplexMatrix where Scalar == Double {
-    
-    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
-        return ComplexMatrix(
-            real: real.interpolated1D(setup: setup),
-            imaginary: imaginary.interpolated1D(setup: setup)
-        )
-    }
-    
-    fileprivate func deinterpolated1D() -> ComplexMatrix {
-        return ComplexMatrix(
-            real: real.deinterpolated1D(),
-            imaginary: imaginary.deinterpolated1D()
-        )
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
-    
-    fileprivate func interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> Matrix {
+    private func _interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         var fft = upsampled().fft1D(setup: setup)
         let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
         fft[columns: columns] = .zeros(shape: shape).asRow()
-        return fft.ifft1D(setup: setup).real.padded(left: shape.columns, right: shape.columns) * 2.0
+        return fft.ifft1D(setup: setup).padded(left: shape.columns, right: shape.columns) * 2.0
     }
     
-    fileprivate func deinterpolated1D(factor: Int = 2) -> Matrix {
+    private func _deinterpolated1D(factor: Int = 2) -> ComplexMatrix {
         return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
     }
     
