@@ -9,7 +9,7 @@ import Foundation
 
 extension Matrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func dfrft1D(order: Scalar) -> ComplexMatrix<Scalar> {
         return ComplexMatrix(real: self).dfrft1D(order: order, setup: setup)
     }
     
@@ -17,7 +17,7 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func dfrft1D(order: Scalar) -> ComplexMatrix<Scalar> {
         fatalError()
     }
     
