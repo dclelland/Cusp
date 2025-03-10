@@ -171,42 +171,19 @@ extension ComplexMatrix where Scalar == Double {
 
 extension Matrix where Scalar == Double {
     
-    // Hamiltonian matrix creation (equivalent to _create_hamiltonian in Python)
     public static func createHamiltonian(length: Int, approximationOrder: Int = 2) -> Matrix<Scalar> {
         let order = approximationOrder / 2
-        var s: Matrix<Scalar> = .zeros(shape: .row(length: length))
-        
-//        torch.arange(1, 4) == Array(1..<4)
-        
-        for i in 1...order {
-            let k = Scalar(i)
-            let coefficient: Scalar =
-            2.0
-            * (-1.0) ** (k - 1.0)
-            * tgamma(k) ** 2.0
-            / tgamma(2.0 * k + 1)
-            let dum = Matrix<Double>.centralDifference(order: i * 2)
-            let intermediary = Matrix.concatenating(
-                columns: [
-                    [[0.0]],
-                    dum[0, (i + 1)..<Swift.min(2 * i + 1, dum.count)],
-                    .zeros(shape: .row(length: length - 1 - 2 * i)),
-                    dum[0, 0..<i]
-                ]
-            )
-            
-            s = coefficient * intermediary + s
-//            dum = dum.padded(left: dum0.shape.columns - 1, right: dum0.shape.columns - 1).convolve1D(filter: dum0.elements.reversed()).cropped(right: dum0.count - 1)
-            
-            
+        let sum = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { sum, k in
+            var stencil = Matrix<Double>.centralDifference(order: k * 2)
+            let coefficient = -stencil[0, k] / 2.0
+            stencil = stencil.padded(right: sum.shape.columns - stencil.shape.columns)
+            stencil = stencil.shifted(columns: -k)
+            stencil[0, 0] = 0.0
+//            let coefficient = stencil.sum() / 2.0
+            return sum + stencil / (Double(k * k) * coefficient)
         }
         
-//        let cd = Matrix<Double>.centralDifference(order: (order + 1) * 2)
-        
-//        print(length, approximationOrder, order, dum.count, dum == cd, dum, cd)
-        
-//        print(length, approximationOrder, Matrix.circulant(vector: s.elements))
-        return .circulant(vector: s.elements) + .diagonal(vector: s.fft1D().real.elements)
+        return .circulant(vector: sum.elements) + .diagonal(vector: sum.fft1D().real.elements)
     }
 }
 
@@ -233,26 +210,11 @@ extension Matrix where Scalar == Double {
 extension Matrix where Scalar == Double {
     
     public static func centralDifference(order: Int) -> Matrix {
-//        return .init(shape: .row(length: order + 1)) { row, column in
-//            let order = Scalar(order)
-//            let k = Scalar(column)
-//            let binomial = tgamma(order + 1) / tgamma(k + 1) * tgamma(order - k + 1)
-//            return binomial * (column % 2 == 0 ? 1.0 : -1.0)
-//        }
-        
-        
-        var result = [Scalar](repeating: 0, count: order + 1)
-
-        // Initialize with binomial coefficients with alternating signs
-        for i in 0...order {
-            let k = i
-            let binomial = tgamma(Double(order + 1)) /
-                              (tgamma(Double(k + 1)) * tgamma(Double(order
-            - k + 1)))
-            result[k] = binomial * (k % 2 == 0 ? 1 : -1)
+        return .init(shape: .row(length: order + 1)) { row, column in
+            let n = order
+            let k = column
+            return (k % 2 == 0 ? 1.0 : -1.0) * tgamma(Double(n + 1)) / (tgamma(Double(k + 1)) * tgamma(Double(n - k + 1)))
         }
-
-        return .init(row: result)
     }
     
 }
