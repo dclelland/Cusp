@@ -174,8 +174,6 @@ extension Matrix where Scalar == Double {
     // Hamiltonian matrix creation (equivalent to _create_hamiltonian in Python)
     public static func createHamiltonian(length: Int, approximationOrder: Int = 2) -> Matrix<Scalar> {
         let order = approximationOrder / 2
-        let dum0: Matrix<Scalar> = [[1.0, -2.0, 1.0]]
-        var dum: Matrix<Scalar> = dum0
         var s: Matrix<Scalar> = .zeros(shape: .row(length: length))
         
 //        torch.arange(1, 4) == Array(1..<4)
@@ -187,6 +185,7 @@ extension Matrix where Scalar == Double {
             * (-1.0) ** (k - 1.0)
             * tgamma(k) ** 2.0
             / tgamma(2.0 * k + 1)
+            let dum = Matrix<Double>.centralDifference(order: i * 2)
             let intermediary = Matrix.concatenating(
                 columns: [
                     [[0.0]],
@@ -197,7 +196,7 @@ extension Matrix where Scalar == Double {
             )
             
             s = coefficient * intermediary + s
-            dum = dum.padded(left: dum0.shape.columns - 1, right: dum0.shape.columns - 1).convolve1D(filter: dum0.elements.reversed()).cropped(right: dum0.count - 1)
+//            dum = dum.padded(left: dum0.shape.columns - 1, right: dum0.shape.columns - 1).convolve1D(filter: dum0.elements.reversed()).cropped(right: dum0.count - 1)
             
             
         }
@@ -206,7 +205,7 @@ extension Matrix where Scalar == Double {
         
 //        print(length, approximationOrder, order, dum.count, dum == cd, dum, cd)
         
-        print(length, approximationOrder, Matrix.circulant(vector: s.elements))
+//        print(length, approximationOrder, Matrix.circulant(vector: s.elements))
         return .circulant(vector: s.elements) + .diagonal(vector: s.fft1D().real.elements)
     }
 }
