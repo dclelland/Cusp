@@ -23,7 +23,7 @@ extension ComplexMatrix where Scalar == Float {
         let a = order.remainder(dividingBy: 4.0)
         switch a {
         case -2.0:
-            return bodyReversed()
+            return reversedBody()
         case -2.0..<(-1.5):
             return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
         case -1.5..<(-0.5):
@@ -39,7 +39,7 @@ extension ComplexMatrix where Scalar == Float {
         case 1.5..<2.0:
             return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
         case 2.0:
-            return bodyReversed()
+            return reversedBody()
         default:
             return ComplexMatrix.zeros(shape: shape)
         }
@@ -91,7 +91,7 @@ extension ComplexMatrix where Scalar == Double {
         let a = order.remainder(dividingBy: 4.0)
         switch a {
         case -2.0:
-            return bodyReversed()
+            return reversedBody()
         case -2.0..<(-1.5):
             return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
         case -1.5..<(-0.5):
@@ -107,7 +107,7 @@ extension ComplexMatrix where Scalar == Double {
         case 1.5..<2.0:
             return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
         case 2.0:
-            return bodyReversed()
+            return reversedBody()
         default:
             return ComplexMatrix.zeros(shape: shape)
         }

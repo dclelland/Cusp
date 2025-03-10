@@ -10,15 +10,15 @@ import Plinth
 
 extension ComplexMatrix where Scalar == Float {
     
-    internal func bodyReversed() -> ComplexMatrix {
-        return ComplexMatrix(real: real.bodyReversed(), imaginary: imaginary.bodyReversed())
+    internal func reversedBody() -> ComplexMatrix {
+        return ComplexMatrix(real: real.reversedBody(), imaginary: imaginary.reversedBody())
     }
     
 }
 
 extension Matrix where Scalar == Float {
     
-    internal func bodyReversed() -> Matrix {
+    internal func reversedBody() -> Matrix {
         let head = elements.first!
         let body = elements.dropFirst()
         return Matrix(shape: shape, elements: [head] + body.reversed())
@@ -28,15 +28,15 @@ extension Matrix where Scalar == Float {
 
 extension ComplexMatrix where Scalar == Double {
     
-    internal func bodyReversed() -> ComplexMatrix {
-        return ComplexMatrix(real: real.bodyReversed(), imaginary: imaginary.bodyReversed())
+    internal func reversedBody() -> ComplexMatrix {
+        return ComplexMatrix(real: real.reversedBody(), imaginary: imaginary.reversedBody())
     }
     
 }
 
 extension Matrix where Scalar == Double {
     
-    internal func bodyReversed() -> Matrix {
+    internal func reversedBody() -> Matrix {
         let head = elements.first!
         let body = elements.dropFirst()
         return Matrix(shape: shape, elements: [head] + body.reversed())

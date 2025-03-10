@@ -13,7 +13,7 @@ let package = Package(
         .library(name: "Cusp", targets: ["Cusp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/dclelland/Plinth", from: "2.10.0")
+        .package(url: "https://github.com/dclelland/Plinth", from: "2.10.2")
     ],
     targets: [
         .target(
