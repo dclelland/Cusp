@@ -182,7 +182,11 @@ extension Matrix where Scalar == Double {
         
         for i in 1...order {
             let k = Scalar(i)
-            let coefficient: Scalar = 2.0 * (-1.0) ** (k - 1.0) * tgamma(k) ** 2.0 / tgamma(2.0 * k + 1)
+            let coefficient: Scalar =
+            2.0
+            * (-1.0) ** (k - 1.0)
+            * tgamma(k) ** 2.0
+            / tgamma(2.0 * k + 1)
             let intermediary = Matrix.concatenating(
                 columns: [
                     [[0.0]],
@@ -195,13 +199,14 @@ extension Matrix where Scalar == Double {
             s = coefficient * intermediary + s
             dum = dum.padded(left: dum0.shape.columns - 1, right: dum0.shape.columns - 1).convolve1D(filter: dum0.elements.reversed()).cropped(right: dum0.count - 1)
             
-//            print(length, i, dum)
             
         }
         
-        let cd = Matrix<Double>.centralDifference(order: (order + 1) * 2)
+//        let cd = Matrix<Double>.centralDifference(order: (order + 1) * 2)
         
-        print(length, approximationOrder, order, dum.count, dum == cd, dum, cd)
+//        print(length, approximationOrder, order, dum.count, dum == cd, dum, cd)
+        
+        print(length, approximationOrder, s)
         return .circulant(vector: s.elements) + .diagonal(vector: s.fft1D().real.elements)
     }
 }
