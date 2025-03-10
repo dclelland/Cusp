@@ -206,7 +206,7 @@ extension Matrix where Scalar == Double {
         
 //        print(length, approximationOrder, order, dum.count, dum == cd, dum, cd)
         
-        print(length, approximationOrder, s)
+        print(length, approximationOrder, Matrix.circulant(vector: s.elements))
         return .circulant(vector: s.elements) + .diagonal(vector: s.fft1D().real.elements)
     }
 }
