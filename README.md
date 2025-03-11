@@ -42,7 +42,8 @@ import Cusp
 ## Todo
 
 - [ ] Figure out how to handle passing through the correct-sized `FFTSetup`
-- [ ] Write faster 2D FFT implementation
+- [ ] Write faster 2D FrFT implementation
+- [ ] Fix the DFrFT Hamiltonian calculation for lengths which aren't powers of two
 
 # Documentation
 
