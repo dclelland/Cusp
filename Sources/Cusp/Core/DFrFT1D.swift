@@ -11,16 +11,24 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, matrix: ComplexMatrix<Scalar>? = nil) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).dfrft1D(order: order, matrix: matrix)
+    public func dfrft1D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).dfrft1D(order: order, approximationOrder: approximationOrder)
+    }
+    
+    public func dfrft1D(matrix: ComplexMatrix<Scalar>) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).dfrft1D(matrix: matrix)
     }
     
 }
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, matrix: ComplexMatrix<Scalar>? = nil) -> ComplexMatrix<Scalar> {
-        let matrix = matrix ?? .dfrftMatrix(length: shape.count, order: order)
+    public func dfrft1D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, approximationOrder: approximationOrder)
+        return dfrft1D(matrix: matrix)
+    }
+    
+    public func dfrft1D(matrix: ComplexMatrix<Scalar>) -> ComplexMatrix<Scalar> {
         return (matrix <*> asColumn()).asRow()
     }
     
@@ -31,55 +39,49 @@ extension ComplexMatrix where Scalar == Double {
     public static func dfrftMatrix(length: Int, order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
         let eigenvectors = ComplexMatrix.dfrftEigenvectors(length: length, approximationOrder: approximationOrder)
         let eigenvalues = ComplexMatrix.dfrftEigenvalues(length: length, order: order)
-
-        var dfrftMatrix = ComplexMatrix<Scalar>.zeros(shape: .square(length: length))
-        
-        dfrftMatrix = eigenvectors <*> .diagonal(vector: eigenvalues.elements) <*> eigenvectors.conjugate().transposed()
-        
-        return dfrftMatrix
+        return eigenvectors <*> .diagonal(vector: eigenvalues.elements) <*> eigenvectors.conjugate().transposed()
     }
     
     public static func dfrftEigenvectors(length: Int, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
         let hamiltonian = Matrix.hamiltonian(length: length, approximationOrder: approximationOrder)
-        let decompositionMatrix = Matrix.oddEvenDecompositionMatrix(length: length)
+        let decomposition = Matrix.oddEvenDecomposition(length: length)
         
-        let CS: Matrix = decompositionMatrix <*> hamiltonian <*> decompositionMatrix.transposed()
+        let CS: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
         
-        let halfSize = length / 2
-        let C2: Matrix = CS[0..<(halfSize + 1), 0..<(halfSize + 1)]
-        let S2: Matrix = CS[(halfSize + 1)..<length, (halfSize + 1)..<length]
+        let C2: Matrix = CS[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
+        let S2: Matrix = CS[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
         
-        let VC = try! C2.eigendecomposition().sorted(.realAscending).rightEigenvectors.real
-        let VS = try! S2.eigendecomposition().sorted(.realAscending).rightEigenvectors.real
+        let VC = try! C2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
+        let VS = try! S2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         
         let N0 = Int(ceil(Double(length) / 2.0 - 1.0))
         let N1 = length / 2 + 1
         
-        var qvc = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N1))
-        var qvs = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N0))
+        var QVC = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N1))
+        var QVS = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N0))
         
-        qvc[0..<N1, 0..<N1] = VC
-        qvs[N1..<(N1 + N0), 0..<N0] = VS
+        QVC[0..<N1, 0..<N1] = VC
+        QVS[N1..<(N1 + N0), 0..<N0] = VS
         
-        let SC2 = (decompositionMatrix <*> qvc).reversedRows()
-        let SS2 = (decompositionMatrix <*> qvs).reversedRows()
+        let SC2 = (decomposition <*> QVC).reversedRows()
+        let SS2 = (decomposition <*> QVS).reversedRows()
         
-        if length % 2 == 0 {
-            let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
-                if column == length - 1 {
-                    return SC2[row, column / 2 + 1]
-                }
-                return column % 2 == 0 ? SC2[row, column / 2] : SS2[row, column / 2]
+        let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
+            if length % 2 == 0 && column == length - 1 {
+                return SC2[row, column / 2 + 1]
             }
-            
-            return ComplexMatrix(real: eigenvectors)
-        } else {
-            let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
-                return column % 2 == 0 ? SC2[row, column / 2] : SS2[row, column / 2]
-            }
-            
-            return ComplexMatrix(real: eigenvectors)
+            return column % 2 == 0 ? SC2[row, column / 2] : SS2[row, column / 2]
         }
+        
+        return ComplexMatrix(real: eigenvectors)
+    }
+    
+    public static func dfrftEigenvalues(length: Int, order: Scalar) -> ComplexMatrix<Scalar> {
+        let alpha = order * (.pi / 2)
+        let indices = Matrix(shape: .row(length: length)) { row, column in
+            return Scalar(column < length - 1 ? column : length - length % 2)
+        }
+        return ComplexMatrix(real: (indices * -alpha).cos(), imaginary: (indices * -alpha).sin())
     }
     
 }
@@ -97,29 +99,6 @@ extension Matrix where Scalar == Double {
         sum[0, 0] = 0.0
         return .circulant(vector: sum.elements) + .diagonal(vector: sum.fft1D().real.elements)
     }
-}
-
-extension ComplexMatrix where Scalar == Double {
-    
-    public static func dfrftEigenvalues(length: Int, order: Scalar) -> ComplexMatrix<Scalar> {
-        let alpha = order * (.pi / 2)
-        let indices = Matrix.dfrftIndices(length: length)
-        return ComplexMatrix(real: (indices * -alpha).cos(), imaginary: (indices * -alpha).sin())
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
-    
-    public static func dfrftIndices(length: Int) -> Matrix<Scalar> {
-        return .init(shape: .row(length: length)) { row, column in
-            return Scalar(column < length - 1 ? column : length - length % 2)
-        }
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
     
     public static func centralDifference(order: Int) -> Matrix {
         return .init(shape: .row(length: order + 1)) { row, column in
@@ -129,11 +108,7 @@ extension Matrix where Scalar == Double {
         }
     }
     
-}
-
-extension Matrix where Scalar == Double {
-    
-    internal static func oddEvenDecompositionMatrix(length: Int) -> Matrix<Scalar> {
+    public static func oddEvenDecomposition(length: Int) -> Matrix<Scalar> {
         return .init(shape: .square(length: length)) { row, column in
             let diagonal = column - row
             let antidiagonal = column + row

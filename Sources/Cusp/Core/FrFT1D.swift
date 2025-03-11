@@ -45,6 +45,10 @@ extension ComplexMatrix where Scalar == Float {
         }
     }
     
+}
+
+extension ComplexMatrix where Scalar == Float {
+    
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? Scalar(-1.0) : Scalar(1.0)
@@ -53,8 +57,8 @@ extension ComplexMatrix where Scalar == Float {
         let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
         let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
-        let preChirp = ComplexMatrix.frftPreChirp(shape: .row(length: shape.count), order: order)
-        let postChirp = ComplexMatrix.frftPostChirp(shape: .row(length: shape.count), order: order)
+        let preChirp = ComplexMatrix._preChirp(shape: .row(length: shape.count), order: order)
+        let postChirp = ComplexMatrix._postChirp(shape: .row(length: shape.count), order: order)
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup)
@@ -73,6 +77,26 @@ extension ComplexMatrix where Scalar == Float {
     
     private func _deinterpolated1D(factor: Int = 2) -> ComplexMatrix {
         return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
+    }
+    
+}
+
+extension ComplexMatrix where Scalar == Float {
+    
+    private static func _preChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let alpha = order * .pi / 2.0
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    }
+    
+    private static func _postChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let alpha = order * .pi / 2.0
+        let factor = .pi / sin(alpha) / Scalar(shape.columns)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
 }
@@ -113,6 +137,10 @@ extension ComplexMatrix where Scalar == Double {
         }
     }
     
+}
+
+extension ComplexMatrix where Scalar == Double {
+    
     private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? -1.0 : 1.0
@@ -121,8 +149,8 @@ extension ComplexMatrix where Scalar == Double {
         let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
         let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
-        let preChirp = ComplexMatrix.frftPreChirp(shape: .row(length: shape.count), order: order)
-        let postChirp = ComplexMatrix.frftPostChirp(shape: .row(length: shape.count), order: order)
+        let preChirp = ComplexMatrix._preChirp(shape: .row(length: shape.count), order: order)
+        let postChirp = ComplexMatrix._postChirp(shape: .row(length: shape.count), order: order)
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup)
@@ -141,6 +169,26 @@ extension ComplexMatrix where Scalar == Double {
     
     private func _deinterpolated1D(factor: Int = 2) -> ComplexMatrix {
         return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
+    }
+    
+}
+
+extension ComplexMatrix where Scalar == Double {
+    
+    private static func _preChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let alpha = order * .pi / 2.0
+        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    }
+    
+    private static func _postChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
+        let ramp = Matrix.centeredXRamp(shape: shape)
+        let alpha = order * .pi / 2.0
+        let factor = .pi / sin(alpha) / Scalar(shape.columns)
+        let phase = ramp.square() * factor
+        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
     }
     
 }
