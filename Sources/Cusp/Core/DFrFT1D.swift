@@ -54,7 +54,7 @@ extension ComplexMatrix where Scalar == Double {
         let VC = try! C2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         let VS = try! S2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         
-        let N0 = Int(ceil(Double(length) / 2.0 - 1.0))
+        let N0 = Int(ceil(Scalar(length) / 2.0 - 1.0))
         let N1 = length / 2 + 1
         
         var QVC = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N1))
@@ -104,7 +104,7 @@ extension Matrix where Scalar == Double {
         return .init(shape: .row(length: order + 1)) { row, column in
             let n = order
             let k = column
-            return (k % 2 == 0 ? 1.0 : -1.0) * tgamma(Double(n + 1)) / (tgamma(Double(k + 1)) * tgamma(Double(n - k + 1)))
+            return (k % 2 == 0 ? 1.0 : -1.0) * tgamma(Scalar(n + 1)) / (tgamma(Scalar(k + 1)) * tgamma(Scalar(n - k + 1)))
         }
     }
     
