@@ -11,8 +11,8 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).dfrft1D(order: order, approximationOrder: approximationOrder)
+    public func dfrft1D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).dfrft1D(order: order, derivativeOrder: derivativeOrder)
     }
     
     public func dfrft1D(matrix: ComplexMatrix<Scalar>) -> ComplexMatrix<Scalar> {
@@ -23,8 +23,8 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func dfrft1D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, approximationOrder: approximationOrder)
+    public func dfrft1D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, derivativeOrder: derivativeOrder)
         return dfrft1D(matrix: matrix)
     }
     
@@ -36,14 +36,14 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public static func dfrftMatrix(length: Int, order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let eigenvectors = ComplexMatrix.dfrftEigenvectors(length: length, approximationOrder: approximationOrder)
+    public static func dfrftMatrix(length: Int, order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        let eigenvectors = ComplexMatrix.dfrftEigenvectors(length: length, derivativeOrder: derivativeOrder)
         let eigenvalues = ComplexMatrix.dfrftEigenvalues(length: length, order: order)
         return eigenvectors <*> .diagonal(vector: eigenvalues.elements) <*> eigenvectors.conjugate().transposed()
     }
     
-    public static func dfrftEigenvectors(length: Int, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let hamiltonian = Matrix.hamiltonian(length: length, approximationOrder: approximationOrder)
+    public static func dfrftEigenvectors(length: Int, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        let hamiltonian = Matrix.hamiltonian(length: length, derivativeOrder: derivativeOrder)
         let decomposition = Matrix.decomposition(length: length)
         let decomposed: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
         
@@ -78,23 +78,24 @@ extension ComplexMatrix where Scalar == Double {
 
 extension Matrix where Scalar == Double {
     
-    public static func hamiltonian(length: Int, approximationOrder: Int = 2) -> Matrix<Scalar> {
-        let order = approximationOrder / 2
-        var sum = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { sum, k in
-            var stencil = Matrix<Scalar>.centralDifference(order: k * 2)
-            stencil = stencil.padded(right: sum.shape.columns - stencil.shape.columns)
-            stencil = stencil.shifted(columns: -k)
-            return sum + stencil / (Scalar(k * k) * -stencil[0, 0] / 2.0)
+    public static func hamiltonian(length: Int, derivativeOrder: Int = 2) -> Matrix<Scalar> {
+        let order = derivativeOrder / 2
+        var derivative: Matrix = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { derivative, derivativeOrder in
+            var coefficients = Matrix<Scalar>.finiteDifferenceCoefficients(derivativeOrder: derivativeOrder * 2)
+            coefficients = coefficients.padded(right: derivative.shape.columns - coefficients.shape.columns)
+            coefficients = coefficients.shifted(columns: -derivativeOrder)
+            return derivative + coefficients / (Scalar(derivativeOrder * derivativeOrder) * -coefficients[0, 0] / 2.0)
         }
-        sum[0, 0] = 0.0
-        return .circulant(vector: sum.elements) + .diagonal(vector: sum.fft1D().real.elements)
+        derivative[0, 0] = 0.0
+        return .circulant(vector: derivative.elements) + .diagonal(vector: derivative.fft1D().real.elements)
     }
     
-    public static func centralDifference(order: Int) -> Matrix {
-        return .init(shape: .row(length: order + 1)) { row, column in
-            let n = order
-            let k = column
-            return (k % 2 == 0 ? 1.0 : -1.0) * tgamma(Scalar(n + 1)) / (tgamma(Scalar(k + 1)) * tgamma(Scalar(n - k + 1)))
+    public static func finiteDifferenceCoefficients(derivativeOrder: Int) -> Matrix {
+        return .init(shape: .row(length: derivativeOrder + 1)) { row, column in
+            let index = column
+            let sign = index % 2 == 0 ? 1.0 : -1.0
+            let coefficient = tgamma(Scalar(derivativeOrder + 1)) / (tgamma(Scalar(index + 1)) * tgamma(Scalar(derivativeOrder - index + 1)))
+            return sign * coefficient
         }
     }
     

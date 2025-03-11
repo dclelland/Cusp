@@ -10,8 +10,8 @@ import Plinth
 
 extension Matrix where Scalar == Double {
     
-    public func dfrft2D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        return ComplexMatrix(real: self).dfrft2D(order: order, approximationOrder: approximationOrder)
+    public func dfrft2D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        return ComplexMatrix(real: self).dfrft2D(order: order, derivativeOrder: derivativeOrder)
     }
 
     public func dfrft2D(matrix: ComplexMatrix<Scalar>) -> ComplexMatrix<Scalar> {
@@ -22,8 +22,8 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func dfrft2D(order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, approximationOrder: approximationOrder)
+    public func dfrft2D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
+        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, derivativeOrder: derivativeOrder)
         return dfrft2D(matrix: matrix)
     }
     

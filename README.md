@@ -35,7 +35,8 @@ import Cusp
 
 ### References/prior art
 
-- [The Discrete Fractional Fourier Transform](https://users.metu.edu.tr/ccandan/pub_dir/dis_frft_SP_TRAN00.pdf) (Candan, 2000)
+- [Digital computation of the fractional Fourier transform](https://ieeexplore.ieee.org/document/536672/) (Ozaktas et. al, 1996)
+- [The Discrete Fractional Fourier Transform](https://ieeexplore.ieee.org/document/756324/) (Candan et. al, 1999)
 - [tunakasif/torch_frft](https://github.com/tunakasif/torch-frft)
 
 ## Todo
