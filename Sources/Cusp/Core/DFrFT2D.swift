@@ -23,7 +23,7 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func dfrft2D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, derivativeOrder: derivativeOrder)
+        let matrix = DFrFT<Scalar>(length: shape.count, order: order).matrix(derivativeOrder: derivativeOrder)
         return dfrft2D(matrix: matrix)
     }
     

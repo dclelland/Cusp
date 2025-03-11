@@ -25,19 +25,19 @@ extension ComplexMatrix where Scalar == Float {
         case -2.0:
             return reversedBody()
         case -2.0..<(-1.5):
-            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: -1.0, setup: setup).frft(order: a + 1.0, setup: setup).deinterpolated()
         case -1.5..<(-0.5):
-            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: a, setup: setup).deinterpolated()
         case -0.5..<0.0:
-            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: -1.0, setup: setup).frft(order: a + 1.0, setup: setup).deinterpolated()
         case 0.0:
             return self
         case 0.0..<0.5:
-            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: 1.0, setup: setup).frft(order: a - 1.0, setup: setup).deinterpolated()
         case 0.5..<1.5:
-            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: a, setup: setup).deinterpolated()
         case 1.5..<2.0:
-            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: 1.0, setup: setup).frft(order: a - 1.0, setup: setup).deinterpolated()
         case 2.0:
             return reversedBody()
         default:
@@ -49,7 +49,7 @@ extension ComplexMatrix where Scalar == Float {
 
 extension ComplexMatrix where Scalar == Float {
     
-    private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    internal func frft(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? Scalar(-1.0) : Scalar(1.0)
         
@@ -57,8 +57,8 @@ extension ComplexMatrix where Scalar == Float {
         let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
         let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
-        let preChirp = ComplexMatrix._preChirp(shape: .row(length: shape.count), order: order)
-        let postChirp = ComplexMatrix._postChirp(shape: .row(length: shape.count), order: order)
+        let preChirp = FrFT<Scalar>(length: shape.count, order: order).preChirp()
+        let postChirp = FrFT<Scalar>(length: shape.count, order: order).postChirp()
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup)
@@ -68,14 +68,18 @@ extension ComplexMatrix where Scalar == Float {
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
     
-    private func _interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+}
+
+extension ComplexMatrix where Scalar == Float {
+    
+    internal func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         var fft = upsampled().fft1D(setup: setup)
         let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
         fft[columns: columns] = .zeros(shape: shape).asRow()
         return fft.ifft1D(setup: setup).padded(left: shape.columns, right: shape.columns) * 2.0
     }
     
-    private func _deinterpolated1D(factor: Int = 2) -> ComplexMatrix {
+    internal func deinterpolated(factor: Int = 2) -> ComplexMatrix {
         return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
     }
     
@@ -83,20 +87,18 @@ extension ComplexMatrix where Scalar == Float {
 
 extension ComplexMatrix where Scalar == Float {
     
-    private static func _preChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: shape)
-        let alpha = order * .pi / 2.0
-        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
-        let phase = ramp.square() * factor
-        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    internal func reversedBody() -> ComplexMatrix {
+        return ComplexMatrix(real: real.reversedBody(), imaginary: imaginary.reversedBody())
     }
     
-    private static func _postChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: shape)
-        let alpha = order * .pi / 2.0
-        let factor = .pi / sin(alpha) / Scalar(shape.columns)
-        let phase = ramp.square() * factor
-        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+}
+
+extension Matrix where Scalar == Float {
+    
+    internal func reversedBody() -> Matrix {
+        let head = elements.first!
+        let body = elements.dropFirst()
+        return Matrix(shape: shape, elements: [head] + body.reversed())
     }
     
 }
@@ -111,25 +113,25 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    internal func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let a = order.remainder(dividingBy: 4.0)
         switch a {
         case -2.0:
             return reversedBody()
         case -2.0..<(-1.5):
-            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: -1.0, setup: setup).frft(order: a + 1.0, setup: setup).deinterpolated()
         case -1.5..<(-0.5):
-            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: a, setup: setup).deinterpolated()
         case -0.5..<0.0:
-            return _interpolated1D(setup: setup)._frft1D(order: -1.0, setup: setup)._frft1D(order: a + 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: -1.0, setup: setup).frft(order: a + 1.0, setup: setup).deinterpolated()
         case 0.0:
             return self
         case 0.0..<0.5:
-            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: 1.0, setup: setup).frft(order: a - 1.0, setup: setup).deinterpolated()
         case 0.5..<1.5:
-            return _interpolated1D(setup: setup)._frft1D(order: a, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: a, setup: setup).deinterpolated()
         case 1.5..<2.0:
-            return _interpolated1D(setup: setup)._frft1D(order: 1.0, setup: setup)._frft1D(order: a - 1.0, setup: setup)._deinterpolated1D()
+            return interpolated(setup: setup).frft(order: 1.0, setup: setup).frft(order: a - 1.0, setup: setup).deinterpolated()
         case 2.0:
             return reversedBody()
         default:
@@ -141,7 +143,7 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    private func _frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    internal func frft(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let alpha = order * .pi / 2.0
         let sign = sin(alpha) < 0.0 ? -1.0 : 1.0
         
@@ -149,8 +151,8 @@ extension ComplexMatrix where Scalar == Double {
         let magnitude = 1.0 / Scalar.sqrt(abs(sin(alpha)))
         let factor = Complex(magnitude * cos(phase), magnitude * sin(phase))
         
-        let preChirp = ComplexMatrix._preChirp(shape: .row(length: shape.count), order: order)
-        let postChirp = ComplexMatrix._postChirp(shape: .row(length: shape.count), order: order)
+        let preChirp = FrFT<Scalar>(length: shape.count, order: order).preChirp()
+        let postChirp = FrFT<Scalar>(length: shape.count, order: order).postChirp()
         
         let multiplied = self * preChirp
         let transformed = multiplied.fft1D(setup: setup)
@@ -160,14 +162,18 @@ extension ComplexMatrix where Scalar == Double {
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
     
-    private func _interpolated1D(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+}
+
+extension ComplexMatrix where Scalar == Double {
+    
+    internal func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         var fft = upsampled().fft1D(setup: setup)
         let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
         fft[columns: columns] = .zeros(shape: shape).asRow()
         return fft.ifft1D(setup: setup).padded(left: shape.columns, right: shape.columns) * 2.0
     }
     
-    private func _deinterpolated1D(factor: Int = 2) -> ComplexMatrix {
+    internal func deinterpolated(factor: Int = 2) -> ComplexMatrix {
         return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
     }
     
@@ -175,20 +181,18 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    private static func _preChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: shape)
-        let alpha = order * .pi / 2.0
-        let factor = -.pi * tan(alpha / 2.0) / Scalar(shape.columns)
-        let phase = ramp.square() * factor
-        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+    internal func reversedBody() -> ComplexMatrix {
+        return ComplexMatrix(real: real.reversedBody(), imaginary: imaginary.reversedBody())
     }
     
-    private static func _postChirp(shape: Shape, order: Scalar) -> ComplexMatrix {
-        let ramp = Matrix.centeredXRamp(shape: shape)
-        let alpha = order * .pi / 2.0
-        let factor = .pi / sin(alpha) / Scalar(shape.columns)
-        let phase = ramp.square() * factor
-        return ComplexMatrix(real: phase.cos(), imaginary: phase.sin())
+}
+
+extension Matrix where Scalar == Double {
+    
+    internal func reversedBody() -> Matrix {
+        let head = elements.first!
+        let body = elements.dropFirst()
+        return Matrix(shape: shape, elements: [head] + body.reversed())
     }
     
 }

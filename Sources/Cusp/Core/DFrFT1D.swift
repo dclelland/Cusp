@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Numerics
 import Plinth
 
 extension Matrix where Scalar == Double {
@@ -24,100 +23,12 @@ extension Matrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public func dfrft1D(order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let matrix = ComplexMatrix.dfrftMatrix(length: shape.count, order: order, derivativeOrder: derivativeOrder)
+        let matrix = DFrFT<Scalar>(length: shape.count, order: order).matrix(derivativeOrder: derivativeOrder)
         return dfrft1D(matrix: matrix)
     }
     
     public func dfrft1D(matrix: ComplexMatrix<Scalar>) -> ComplexMatrix<Scalar> {
         return (matrix <*> asColumn()).asRow()
-    }
-    
-}
-
-extension ComplexMatrix where Scalar == Double {
-    
-    public static func dfrftMatrix(length: Int, order: Scalar, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let eigenvectors = ComplexMatrix.dfrftEigenvectors(length: length, derivativeOrder: derivativeOrder)
-        let eigenvalues = ComplexMatrix.dfrftEigenvalues(length: length, order: order)
-        return eigenvectors <*> .diagonal(vector: eigenvalues.elements) <*> eigenvectors.conjugate().transposed()
-    }
-    
-    public static func dfrftEigenvectors(length: Int, derivativeOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        let hamiltonian = Matrix.hamiltonian(length: length, derivativeOrder: derivativeOrder)
-        let decomposition = Matrix.decomposition(length: length)
-        let decomposed: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
-        
-        let cosines: Matrix = decomposed[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
-        let sines: Matrix = decomposed[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
-        
-        let cosineEigenvectors = try! cosines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
-        let sineEigenvectors = try! sines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
-        
-        let transformedCosineEigenvectors = (decomposition <*> cosineEigenvectors.padded(bottom: sineEigenvectors.shape.rows)).reversedRows()
-        let transformedSineEigenvectors = (decomposition <*> sineEigenvectors.padded(top: cosineEigenvectors.shape.rows)).reversedRows()
-        
-        let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
-            if length % 2 == 0 && column == length - 1 {
-                return transformedCosineEigenvectors[row, column / 2 + 1]
-            }
-            return column % 2 == 0 ? transformedCosineEigenvectors[row, column / 2] : transformedSineEigenvectors[row, column / 2]
-        }
-        
-        return ComplexMatrix(real: eigenvectors)
-    }
-    
-    public static func dfrftEigenvalues(length: Int, order: Scalar) -> ComplexMatrix<Scalar> {
-        let alpha = order * (.pi / 2)
-        let indices = Matrix(shape: .row(length: length)) { row, column in
-            return Scalar(column < length - 1 ? column : length - length % 2)
-        }
-        return ComplexMatrix(real: (indices * -alpha).cos(), imaginary: (indices * -alpha).sin())
-    }
-    
-}
-
-extension Matrix where Scalar == Double {
-    
-    public static func hamiltonian(length: Int, derivativeOrder: Int = 2) -> Matrix<Scalar> {
-        let order = derivativeOrder / 2
-        var derivative: Matrix = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { derivative, derivativeOrder in
-            var coefficients = Matrix<Scalar>.finiteDifferenceCoefficients(derivativeOrder: derivativeOrder * 2)
-            coefficients = coefficients.padded(right: derivative.shape.columns - coefficients.shape.columns)
-            coefficients = coefficients.shifted(columns: -derivativeOrder)
-            return derivative + coefficients / (Scalar(derivativeOrder * derivativeOrder) * -coefficients[0, 0] / 2.0)
-        }
-        derivative[0, 0] = 0.0
-        return .circulant(vector: derivative.elements) + .diagonal(vector: derivative.fft1D().real.elements)
-    }
-    
-    public static func finiteDifferenceCoefficients(derivativeOrder: Int) -> Matrix {
-        return .init(shape: .row(length: derivativeOrder + 1)) { row, column in
-            let index = column
-            let sign = index % 2 == 0 ? 1.0 : -1.0
-            let coefficient = tgamma(Scalar(derivativeOrder + 1)) / (tgamma(Scalar(index + 1)) * tgamma(Scalar(derivativeOrder - index + 1)))
-            return sign * coefficient
-        }
-    }
-    
-    public static func decomposition(length: Int) -> Matrix<Scalar> {
-        return .init(shape: .square(length: length)) { row, column in
-            let diagonal = column - row
-            let antidiagonal = column + row
-            switch (diagonal, antidiagonal) {
-            case (0, 0):
-                return 1.0
-            case (0, length):
-                return 1.0
-            case (0, _) where column + row < length:
-                return 1.0 / Scalar.sqrt(2.0)
-            case (0, _):
-                return -1.0 / Scalar.sqrt(2.0)
-            case (_, length):
-                return 1.0 / Scalar.sqrt(2.0)
-            default:
-                return 0.0
-            }
-        }
     }
     
 }
