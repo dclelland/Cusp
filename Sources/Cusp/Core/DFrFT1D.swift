@@ -173,16 +173,13 @@ extension Matrix where Scalar == Double {
     
     public static func createHamiltonian(length: Int, approximationOrder: Int = 2) -> Matrix<Scalar> {
         let order = approximationOrder / 2
-        let sum = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { sum, k in
-            var stencil = Matrix<Double>.centralDifference(order: k * 2)
-            let coefficient = -stencil[0, k] / 2.0
+        var sum = (1...order).reduce(Matrix.zeros(shape: .row(length: length))) { sum, k in
+            var stencil = Matrix<Scalar>.centralDifference(order: k * 2)
             stencil = stencil.padded(right: sum.shape.columns - stencil.shape.columns)
             stencil = stencil.shifted(columns: -k)
-            stencil[0, 0] = 0.0
-//            let coefficient = stencil.sum() / 2.0
-            return sum + stencil / (Double(k * k) * coefficient)
+            return sum + stencil / (Scalar(k * k) * -stencil[0, 0] / 2.0)
         }
-        
+        sum[0, 0] = 0.0
         return .circulant(vector: sum.elements) + .diagonal(vector: sum.fft1D().real.elements)
     }
 }
