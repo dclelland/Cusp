@@ -45,26 +45,16 @@ extension ComplexMatrix where Scalar == Double {
     public static func dfrftEigenvectors(length: Int, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
         let hamiltonian = Matrix.hamiltonian(length: length, approximationOrder: approximationOrder)
         let decomposition = Matrix.decomposition(length: length)
+        let decomposed: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
         
-        let diagonalized: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
-        
-        let cosines: Matrix = diagonalized[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
-        let sines: Matrix = diagonalized[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
+        let cosines: Matrix = decomposed[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
+        let sines: Matrix = decomposed[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
         
         let cosineEigenvectors = try! cosines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         let sineEigenvectors = try! sines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         
-        let oddCount = Int(ceil(Scalar(length) / 2.0 - 1.0))
-        let evenCount = length / 2 + 1
-        
-        var expandedCosineEigenvectors = Matrix.zeros(shape: .init(rows: oddCount + evenCount, columns: evenCount))
-        var expandedSineEigenvectors = Matrix.zeros(shape: .init(rows: oddCount + evenCount, columns: oddCount))
-        
-        expandedCosineEigenvectors[0..<evenCount, 0..<evenCount] = cosineEigenvectors
-        expandedSineEigenvectors[evenCount..<(evenCount + oddCount), 0..<oddCount] = sineEigenvectors
-        
-        let transformedCosineEigenvectors = (decomposition <*> expandedCosineEigenvectors).reversedRows()
-        let transformedSineEigenvectors = (decomposition <*> expandedSineEigenvectors).reversedRows()
+        let transformedCosineEigenvectors = (decomposition <*> cosineEigenvectors.padded(bottom: sineEigenvectors.shape.rows)).reversedRows()
+        let transformedSineEigenvectors = (decomposition <*> sineEigenvectors.padded(top: cosineEigenvectors.shape.rows)).reversedRows()
         
         let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
             if length % 2 == 0 && column == length - 1 {
