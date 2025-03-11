@@ -113,7 +113,7 @@ extension Matrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    internal func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
+    public func frft1D(order: Scalar, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix<Scalar> {
         let a = order.remainder(dividingBy: 4.0)
         switch a {
         case -2.0:
