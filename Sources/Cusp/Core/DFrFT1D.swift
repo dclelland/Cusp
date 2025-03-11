@@ -29,28 +29,12 @@ extension ComplexMatrix where Scalar == Double {
 extension ComplexMatrix where Scalar == Double {
     
     public static func dfrftMatrix(length: Int, order: Scalar, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
-        precondition(length >= 1 && approximationOrder >= 2, "Necessary conditions for integers: length >= 1 and approximateOrder >= 2.")
-        return .identity(shape: .square(length: length))
-        
-        // Get eigenvectors and eigenvalues
         let eigenvectors = ComplexMatrix.dfrftEigenvectors(length: length, approximationOrder: approximationOrder)
         let eigenvalues = ComplexMatrix.dfrftEigenvalues(length: length, order: order)
 
-        // Compute the DFrFT matrix: eigenvectors * diag(eigenvalues) * eigenvectors.conjugateTransposed()
         var dfrftMatrix = ComplexMatrix<Scalar>.zeros(shape: .square(length: length))
         
         dfrftMatrix = eigenvectors <*> .diagonal(vector: eigenvalues.elements) <*> eigenvectors.conjugate().transposed()
-        
-//        // This is equivalent to torch.einsum("ij,j,kj->ik", evecs, evals, evecs)
-//        for i in 0..<length {
-//            for k in 0..<length {
-//                var sum = Complex.zero
-//                for j in 0..<length {
-//                    sum += eigenvectors[i, j] * eigenvalues[0, j] * eigenvectors[k, j].conjugate
-//                }
-//                dfrftMatrix[i, k] = sum
-//            }
-//        }
         
         return dfrftMatrix
     }
