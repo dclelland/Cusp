@@ -44,33 +44,33 @@ extension ComplexMatrix where Scalar == Double {
     
     public static func dfrftEigenvectors(length: Int, approximationOrder: Int = 2) -> ComplexMatrix<Scalar> {
         let hamiltonian = Matrix.hamiltonian(length: length, approximationOrder: approximationOrder)
-        let decomposition = Matrix.oddEvenDecomposition(length: length)
+        let decomposition = Matrix.decomposition(length: length)
         
-        let CS: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
+        let diagonalized: Matrix = decomposition <*> hamiltonian <*> decomposition.transposed()
         
-        let C2: Matrix = CS[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
-        let S2: Matrix = CS[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
+        let cosines: Matrix = diagonalized[0..<(length / 2 + 1), 0..<(length / 2 + 1)]
+        let sines: Matrix = diagonalized[(length / 2 + 1)..<length, (length / 2 + 1)..<length]
         
-        let VC = try! C2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
-        let VS = try! S2.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
+        let cosineEigenvectors = try! cosines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
+        let sineEigenvectors = try! sines.eigendecomposition(computing: .rightEigenvectors).sorted(.realAscending).rightEigenvectors.real
         
-        let N0 = Int(ceil(Scalar(length) / 2.0 - 1.0))
-        let N1 = length / 2 + 1
+        let oddCount = Int(ceil(Scalar(length) / 2.0 - 1.0))
+        let evenCount = length / 2 + 1
         
-        var QVC = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N1))
-        var QVS = Matrix.zeros(shape: .init(rows: N0 + N1, columns: N0))
+        var expandedCosineEigenvectors = Matrix.zeros(shape: .init(rows: oddCount + evenCount, columns: evenCount))
+        var expandedSineEigenvectors = Matrix.zeros(shape: .init(rows: oddCount + evenCount, columns: oddCount))
         
-        QVC[0..<N1, 0..<N1] = VC
-        QVS[N1..<(N1 + N0), 0..<N0] = VS
+        expandedCosineEigenvectors[0..<evenCount, 0..<evenCount] = cosineEigenvectors
+        expandedSineEigenvectors[evenCount..<(evenCount + oddCount), 0..<oddCount] = sineEigenvectors
         
-        let SC2 = (decomposition <*> QVC).reversedRows()
-        let SS2 = (decomposition <*> QVS).reversedRows()
+        let transformedCosineEigenvectors = (decomposition <*> expandedCosineEigenvectors).reversedRows()
+        let transformedSineEigenvectors = (decomposition <*> expandedSineEigenvectors).reversedRows()
         
         let eigenvectors = Matrix.init(shape: .square(length: length)) { row, column in
             if length % 2 == 0 && column == length - 1 {
-                return SC2[row, column / 2 + 1]
+                return transformedCosineEigenvectors[row, column / 2 + 1]
             }
-            return column % 2 == 0 ? SC2[row, column / 2] : SS2[row, column / 2]
+            return column % 2 == 0 ? transformedCosineEigenvectors[row, column / 2] : transformedSineEigenvectors[row, column / 2]
         }
         
         return ComplexMatrix(real: eigenvectors)
@@ -108,7 +108,7 @@ extension Matrix where Scalar == Double {
         }
     }
     
-    public static func oddEvenDecomposition(length: Int) -> Matrix<Scalar> {
+    public static func decomposition(length: Int) -> Matrix<Scalar> {
         return .init(shape: .square(length: length)) { row, column in
             let diagonal = column - row
             let antidiagonal = column + row
