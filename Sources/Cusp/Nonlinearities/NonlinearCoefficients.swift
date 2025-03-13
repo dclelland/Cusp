@@ -52,20 +52,21 @@ public struct NonlinearCoefficients<Scalar> where Scalar: Real {
 
 extension ComplexMatrix where Scalar == Float {
     
-    public func addNonlinearPhase(using coefficients: NonlinearCoefficients<Scalar>) -> ComplexMatrix {
+    public func addNonlinearPhase(using coefficients: NonlinearCoefficients<Scalar>, at distance: Scalar = 1.0) -> ComplexMatrix {
         var phaseShift = Matrix.zeros(shape: shape)
         
         let amplitude = absolute()
         let intensity = squareMagnitudes()
 
         for order in 1...5 {
-            if coefficients[order] != 0 {
+            let coefficient = coefficients[order] * 2.0 * .pi
+            if coefficient != 0.0 {
                 switch order {
-                    case 1: phaseShift += coefficients[order]
-                    case 2: phaseShift += coefficients[order] * amplitude
-                    case 3: phaseShift += coefficients[order] * intensity
-                    case 4: phaseShift += coefficients[order] * (amplitude * intensity)
-                    case 5: phaseShift += coefficients[order] * (intensity * intensity)
+                    case 1: phaseShift += coefficient
+                    case 2: phaseShift += coefficient * amplitude
+                    case 3: phaseShift += coefficient * intensity
+                    case 4: phaseShift += coefficient * (amplitude * intensity)
+                    case 5: phaseShift += coefficient * (intensity * intensity)
                     default: break
                 }
             }
@@ -78,20 +79,21 @@ extension ComplexMatrix where Scalar == Float {
 
 extension ComplexMatrix where Scalar == Double {
     
-    public func addNonlinearPhase(using coefficients: NonlinearCoefficients<Scalar>) -> ComplexMatrix {
+    public func addNonlinearPhase(using coefficients: NonlinearCoefficients<Scalar>, at distance: Scalar = 1.0) -> ComplexMatrix {
         var phaseShift = Matrix.zeros(shape: shape)
         
         let amplitude = absolute()
         let intensity = squareMagnitudes()
 
         for order in 1...5 {
-            if coefficients[order] != 0 {
+            let coefficient = coefficients[order] * 2.0 * .pi
+            if coefficient != 0.0 {
                 switch order {
-                    case 1: phaseShift += coefficients[order]
-                    case 2: phaseShift += coefficients[order] * amplitude
-                    case 3: phaseShift += coefficients[order] * intensity
-                    case 4: phaseShift += coefficients[order] * (amplitude * intensity)
-                    case 5: phaseShift += coefficients[order] * (intensity * intensity)
+                    case 1: phaseShift += coefficient
+                    case 2: phaseShift += coefficient * amplitude
+                    case 3: phaseShift += coefficient * intensity
+                    case 4: phaseShift += coefficient * (amplitude * intensity)
+                    case 5: phaseShift += coefficient * (intensity * intensity)
                     default: break
                 }
             }
