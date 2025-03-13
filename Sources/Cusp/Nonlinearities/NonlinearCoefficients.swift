@@ -59,7 +59,7 @@ extension ComplexMatrix where Scalar == Float {
         let intensity = squareMagnitudes()
 
         for order in 1...5 {
-            let coefficient = coefficients[order] * 2.0 * .pi
+            let coefficient = coefficients[order] * distance * 2.0 * .pi
             if coefficient != 0.0 {
                 switch order {
                     case 1: phaseShift += coefficient
@@ -86,7 +86,7 @@ extension ComplexMatrix where Scalar == Double {
         let intensity = squareMagnitudes()
 
         for order in 1...5 {
-            let coefficient = coefficients[order] * 2.0 * .pi
+            let coefficient = coefficients[order] * distance * 2.0 * .pi
             if coefficient != 0.0 {
                 switch order {
                     case 1: phaseShift += coefficient
