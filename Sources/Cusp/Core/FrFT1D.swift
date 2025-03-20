@@ -72,7 +72,8 @@ extension ComplexMatrix where Scalar == Float {
     
     internal func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         var fft = upsampled().fft1D(setup: setup)
-        let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
+        // Preserve the Nyquist frequency (shape.columns/2) by starting at shape.columns/2 + 1
+        let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2 + 1)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
         fft[columns: columns] = .zeros(shape: shape).asRow()
         return fft.ifft1D(setup: setup).padded(left: shape.columns, right: shape.columns) * 2.0
     }
@@ -144,15 +145,16 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    internal func interpolated(factor: Int = 2, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+    internal func interpolated(factor: Int = 4, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
         var fft = upsampled(factor: factor).fft1D(setup: setup)
-        let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
+        // Preserve the Nyquist frequency (shape.columns/2) by starting at shape.columns/2 + 1
+        let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2 + 1)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
         fft[columns: columns] = .zeros(shape: .row(length: columns.count))
         let result = fft.ifft1D(setup: setup).padded(left: fft.shape.columns / 2, right: fft.shape.columns / 2) * Scalar(factor)
         return result
     }
     
-    internal func deinterpolated(factor: Int = 2) -> ComplexMatrix {
+    internal func deinterpolated(factor: Int = 4) -> ComplexMatrix {
         let cropped = cropped(left: shape.columns / 4, right: shape.columns / 4)
         let downsampled = cropped.downsampled(factor: factor)
         return downsampled
