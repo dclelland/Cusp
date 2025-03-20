@@ -137,8 +137,6 @@ extension ComplexMatrix where Scalar == Double {
         let kernel = postChirp.fftShifted().fft1D(setup: setup)
         let result = (transformed * kernel).ifft1D(setup: setup).cropped(right: shape.count * (scale - 1))
         
-        print(multiplied.shape, transformed.shape, kernel.shape, result.shape)
-        
         return (result * preChirp * factor) / Scalar.sqrt(Scalar(shape.count))
     }
     
@@ -146,15 +144,18 @@ extension ComplexMatrix where Scalar == Double {
 
 extension ComplexMatrix where Scalar == Double {
     
-    internal func interpolated(setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
-        var fft = upsampled().fft1D(setup: setup)
+    internal func interpolated(factor: Int = 2, setup: FFT<Scalar>.Setup? = nil) -> ComplexMatrix {
+        var fft = upsampled(factor: factor).fft1D(setup: setup)
         let columns = (fft.shape.columnIndices.lowerBound + shape.columns / 2)...(fft.shape.columnIndices.upperBound - shape.columns / 2)
-        fft[columns: columns] = .zeros(shape: shape).asRow()
-        return fft.ifft1D(setup: setup).padded(left: shape.columns, right: shape.columns) * 2.0
+        fft[columns: columns] = .zeros(shape: .row(length: columns.count))
+        let result = fft.ifft1D(setup: setup).padded(left: fft.shape.columns / 2, right: fft.shape.columns / 2) * Scalar(factor)
+        return result
     }
     
-    internal func deinterpolated() -> ComplexMatrix {
-        return cropped(left: shape.columns / 4, right: shape.columns / 4).downsampled()
+    internal func deinterpolated(factor: Int = 2) -> ComplexMatrix {
+        let cropped = cropped(left: shape.columns / 4, right: shape.columns / 4)
+        let downsampled = cropped.downsampled(factor: factor)
+        return downsampled
     }
     
 }
