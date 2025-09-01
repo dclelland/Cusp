@@ -42,6 +42,8 @@ import Cusp
 ## Todo
 
 - [ ] Figure out how to handle passing through the correct-sized `FFTSetup`
+- [ ] Write faster 1D FrFT implementation
+    - Look at caching the chirp matrices
 - [ ] Write faster 2D FrFT implementation
 - [ ] Fix the DFrFT Hamiltonian calculation for lengths which aren't powers of two
 
